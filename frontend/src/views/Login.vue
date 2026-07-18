@@ -57,10 +57,11 @@
 
           <p-button 
             type="submit" 
-            label="Sign In" 
             class="w-full submit-action-btn" 
             :loading="loading" 
-          />
+          >
+            <span class="p-button-label">Sign In</span>
+          </p-button>
         </form>
 
         <!-- Sign Up Form (Mock representation) -->
@@ -121,19 +122,21 @@
 
           <p-button 
             type="submit" 
-            label="Sign Up" 
             class="w-full submit-action-btn" 
-          />
+          >
+            <span class="p-button-label">Sign Up</span>
+          </p-button>
         </form>
 
         <!-- Toggle Form Switcher -->
         <div class="form-toggle-footer">
           <span>{{ isSignIn ? "Don't have an account?" : "Already have an account?" }}</span>
           <p-button 
-            :label="isSignIn ? 'Sign up' : 'Sign in'" 
             class="p-button-link inline-toggle-btn" 
             @click="toggleForm" 
-          />
+          >
+            {{ isSignIn ? 'Sign up' : 'Sign in' }}
+          </p-button>
         </div>
 
       </div>
