@@ -18,7 +18,8 @@ const INITIAL_EMAILS = [
     </div>`,
     isRead: false,
     isStarred: true,
-    attachments: []
+    attachments: [],
+    tags: ['security', 'important']
   },
   {
     id: 'm2',
@@ -38,7 +39,8 @@ const INITIAL_EMAILS = [
     isStarred: false,
     attachments: [
       { filename: 'invoice_july_2026.pdf', size: '142 KB', type: 'application/pdf' }
-    ]
+    ],
+    tags: ['billing', 'invoice', 'important']
   },
   {
     id: 'm3',
@@ -55,7 +57,8 @@ const INITIAL_EMAILS = [
     </div>`,
     isRead: false,
     isStarred: false,
-    attachments: []
+    attachments: [],
+    tags: ['work', 'support']
   },
   {
     id: 'm4',
@@ -72,7 +75,8 @@ const INITIAL_EMAILS = [
     </div>`,
     isRead: false,
     isStarred: true,
-    attachments: []
+    attachments: [],
+    tags: ['api', 'important', 'work']
   },
   {
     id: 'm5',
@@ -91,7 +95,25 @@ const INITIAL_EMAILS = [
     </div>`,
     isRead: true,
     isStarred: false,
-    attachments: []
+    attachments: [],
+    tags: ['tech', 'news']
+  },
+  {
+    id: 'm6',
+    address: 'john@codeflai.tech',
+    sender: 'john@codeflai.tech',
+    recipient: 'recipient@example.com',
+    subject: 'Follow-up regarding code review',
+    date: '2026-07-18T12:00:00Z',
+    content: `<div style="font-family: sans-serif; padding: 20px; color: #333;">
+      <p>Hi Team,</p>
+      <p>I just submitted my changes for review. Let me know if you see any issues. Thanks!</p>
+    </div>`,
+    isRead: true,
+    isStarred: false,
+    attachments: [],
+    tags: ['sent', 'work'],
+    isSent: true
   }
 ];
 

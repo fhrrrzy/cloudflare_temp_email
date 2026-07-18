@@ -1,172 +1,292 @@
 <template>
-  <div class="webmail-view">
-    <!-- Sidebar Account and Folder Selector -->
-    <div class="webmail-sidebar">
-      <div class="mailbox-select-card">
-        <h3>Active Mailbox</h3>
+  <div class="webmail-dark-container">
+    <!-- 1. LEFT SIDEBAR: Accounts & Folders/Categories -->
+    <div class="webmail-left-sidebar">
+      <!-- Account Selection Dropdown -->
+      <div class="account-header">
         <dropdown 
           v-model="selectedEmailAddress" 
           :options="accountEmails" 
-          placeholder="Select an address" 
-          class="w-full"
+          placeholder="Select an account" 
+          class="account-dropdown w-full"
           @change="onMailboxChange"
-        />
+        >
+          <template #value="slotProps">
+            <div class="account-dropdown-value" v-if="slotProps.value">
+              <i class="pi pi-user-edit account-avatar-icon"></i>
+              <span class="account-name-text">{{ getAccountDisplayName(slotProps.value) }}</span>
+            </div>
+            <span v-else>{{ slotProps.placeholder }}</span>
+          </template>
+        </dropdown>
       </div>
 
-      <div class="folders-menu">
+      <!-- Main Folders Menu -->
+      <div class="menu-section">
         <div 
-          v-for="folder in folders" 
+          v-for="folder in mainFolders" 
           :key="folder.id" 
-          class="folder-item" 
+          class="menu-item" 
           :class="{ 'active': currentFolder === folder.id }"
           @click="selectFolder(folder.id)"
         >
-          <i :class="folder.icon"></i>
-          <span>{{ folder.name }}</span>
-          <span v-if="folder.id === 'inbox' && unreadCount > 0" class="badge-count">{{ unreadCount }}</span>
+          <div class="item-left">
+            <i :class="folder.icon"></i>
+            <span>{{ folder.name }}</span>
+          </div>
+          <span v-if="getFolderCount(folder.id) > 0" class="item-badge">
+            {{ getFolderCount(folder.id) }}
+          </span>
         </div>
       </div>
 
-      <p-button 
-        label="Compose Mail" 
-        icon="pi pi-pencil" 
-        class="w-full compose-btn" 
-        @click="openComposeDialog"
-      />
+      <hr class="menu-divider" />
+
+      <!-- Categories Menu -->
+      <div class="menu-section">
+        <div 
+          v-for="cat in categoryFolders" 
+          :key="cat.id" 
+          class="menu-item" 
+          :class="{ 'active': currentFolder === cat.id }"
+          @click="selectFolder(cat.id)"
+        >
+          <div class="item-left">
+            <i :class="cat.icon"></i>
+            <span>{{ cat.name }}</span>
+          </div>
+          <span v-if="getCategoryCount(cat.id) > 0" class="item-badge font-normal">
+            {{ getCategoryCount(cat.id) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Bottom Compose Button -->
+      <div class="sidebar-compose-footer">
+        <p-button 
+          label="Compose Mail" 
+          icon="pi pi-pencil" 
+          class="w-full p-button-sm compose-action-btn" 
+          @click="openComposeDialog"
+        />
+      </div>
     </div>
 
-    <!-- Email List Column -->
-    <div class="email-list-column">
-      <div class="list-header">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-search" />
-          <input-text v-model="mailSearchQuery" placeholder="Search mail..." class="p-inputtext-sm w-full search-mail" />
-        </span>
+    <!-- 2. MIDDLE COLUMN: Emails List -->
+    <div class="webmail-middle-column">
+      <!-- Title & Mail Filters Header -->
+      <div class="middle-column-header">
+        <h2 class="folder-title">{{ getFolderTitle() }}</h2>
+        <div class="filter-tabs">
+          <button 
+            class="tab-btn" 
+            :class="{ 'active': filterReadState === 'all' }"
+            @click="setReadFilter('all')"
+          >
+            All mail
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ 'active': filterReadState === 'unread' }"
+            @click="setReadFilter('unread')"
+          >
+            Unread
+          </button>
+        </div>
       </div>
 
-      <div class="emails-container">
-        <div v-if="filteredEmails.length === 0" class="empty-list">
-          <i class="pi pi-envelope" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 10px;"></i>
-          <span>No emails in this folder</span>
+      <!-- Search Box -->
+      <div class="search-box-container">
+        <div class="search-input-wrapper">
+          <i class="pi pi-search search-icon"></i>
+          <input-text 
+            v-model="mailSearchQuery" 
+            placeholder="Search" 
+            class="search-input-field" 
+          />
         </div>
-        
+      </div>
+
+      <!-- Emails List Container -->
+      <div class="emails-scroll-container">
+        <div v-if="filteredEmails.length === 0" class="empty-emails-placeholder">
+          <i class="pi pi-envelope empty-icon"></i>
+          <p>No messages found</p>
+        </div>
+
         <div 
+          v-else
           v-for="mail in filteredEmails" 
           :key="mail.id" 
-          class="mail-summary-card"
-          :class="{ 'active': selectedMail?.id === mail.id, 'unread': !mail.isRead }"
+          class="email-card-item"
+          :class="{ 'selected': selectedMail?.id === mail.id, 'unread': !mail.isRead }"
           @click="selectMail(mail)"
         >
-          <div class="mail-header-row">
-            <span class="sender-name">{{ getCleanSender(mail.sender) }}</span>
-            <span class="mail-date">{{ formatShortDate(mail.date) }}</span>
+          <div class="card-header-line">
+            <span class="sender">{{ getCleanSender(mail.sender) }}</span>
+            <span class="time">{{ relativeTime(mail.date) }}</span>
           </div>
-          
-          <div class="mail-subject-row">
-            <span class="subject">{{ mail.subject }}</span>
+
+          <div class="card-subject-line">
+            {{ mail.subject }}
+            <span v-if="!mail.isRead" class="unread-dot-indicator"></span>
           </div>
-          
-          <div class="mail-snippet-row">
-            <span class="snippet">{{ getSnippet(mail.content) }}</span>
-            <div class="mail-markers">
-              <i 
-                :class="mail.isStarred ? 'pi pi-star-fill star-active' : 'pi pi-star'"
-                @click.stop="toggleStar(mail)"
-              ></i>
-            </div>
+
+          <div class="card-snippet-line">
+            {{ getSnippet(mail.content) }}
+          </div>
+
+          <!-- Email tags/pills -->
+          <div v-if="mail.tags && mail.tags.length > 0" class="card-tags-row">
+            <span 
+              v-for="tag in mail.tags" 
+              :key="tag" 
+              class="tag-pill"
+              :class="getTagClass(tag)"
+            >
+              {{ tag }}
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Email Reading View -->
-    <div class="email-reading-column">
-      <div v-if="!selectedMail" class="empty-reading-pane">
-        <i class="pi pi-envelope" style="font-size: 4rem; color: #e2e8f0; margin-bottom: 15px;"></i>
-        <h2>No Message Selected</h2>
-        <p>Choose an email from the list to view its contents.</p>
-      </div>
-
-      <div v-else class="reading-pane">
-        <!-- Message Action Bar -->
-        <div class="reading-action-bar">
-          <div class="left-actions">
+    <!-- 3. RIGHT COLUMN: Email Reading Pane -->
+    <div class="webmail-right-column">
+      <!-- Active Message State -->
+      <div v-if="selectedMail" class="active-reading-layout">
+        <!-- Reading Header Actions -->
+        <div class="reading-toolbar">
+          <div class="toolbar-left">
             <p-button 
-              icon="pi pi-reply" 
-              label="Reply" 
-              class="p-button-text p-button-sm" 
-              @click="replyMail"
+              icon="pi pi-archive" 
+              class="toolbar-btn" 
+              v-tooltip.top="'Archive'" 
+              @click="archiveActiveMail"
             />
-            <p-button 
-              :icon="selectedMail.isStarred ? 'pi pi-star-fill' : 'pi pi-star'" 
-              :label="selectedMail.isStarred ? 'Unstar' : 'Star'" 
-              class="p-button-text p-button-sm"
-              :class="{ 'star-active-text': selectedMail.isStarred }"
-              @click="toggleStar(selectedMail)"
-            />
-            <p-button 
-              :icon="selectedMail.isRead ? 'pi pi-envelope' : 'pi pi-envelope-open'" 
-              :label="selectedMail.isRead ? 'Mark as Unread' : 'Mark as Read'" 
-              class="p-button-text p-button-sm"
-              @click="toggleReadState"
-            />
-          </div>
-          
-          <div class="right-actions">
             <p-button 
               icon="pi pi-trash" 
-              class="p-button-text p-button-danger p-button-sm" 
+              class="toolbar-btn text-red-hover" 
+              v-tooltip.top="'Move to Trash'" 
               @click="deleteMail"
             />
           </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-left">
+            <p-button 
+              icon="pi pi-clock" 
+              class="toolbar-btn" 
+              v-tooltip.top="'Snooze'" 
+              @click="snoozeActiveMail"
+            />
+          </div>
+
+          <div class="toolbar-right">
+            <p-button 
+              icon="pi pi-reply" 
+              class="toolbar-btn" 
+              v-tooltip.top="'Reply'" 
+              @click="replyMail"
+            />
+            <p-button 
+              icon="pi pi-reply" 
+              class="toolbar-btn pi-flip-h" 
+              v-tooltip.top="'Reply All'" 
+              @click="replyMail"
+            />
+            <p-button 
+              icon="pi pi-arrow-right" 
+              class="toolbar-btn" 
+              v-tooltip.top="'Forward'" 
+              @click="forwardActiveMail"
+            />
+            <div class="toolbar-divider inline"></div>
+            <p-button 
+              icon="pi pi-ellipsis-v" 
+              class="toolbar-btn" 
+              v-tooltip.top="'More actions'" 
+            />
+          </div>
         </div>
 
-        <!-- Message Details Header -->
-        <div class="reading-header">
-          <h1 class="subject-title">{{ selectedMail.subject }}</h1>
-          
-          <div class="sender-info-block">
-            <div class="avatar">{{ getInitials(selectedMail.sender) }}</div>
-            <div class="sender-details">
-              <div class="sender-line">
-                <span class="from-label">From:</span>
-                <span class="from-val font-semibold">{{ selectedMail.sender }}</span>
-              </div>
-              <div class="recipient-line">
-                <span class="to-label">To:</span>
-                <span class="to-val">{{ selectedMail.recipient }}</span>
-              </div>
+        <!-- Sender Details Box -->
+        <div class="reading-meta-header">
+          <div class="meta-left">
+            <div class="avatar-initials-circle">
+              {{ getInitials(selectedMail.sender) }}
             </div>
-            <div class="date-line">
-              {{ formatFullDate(selectedMail.date) }}
+            <div class="meta-sender-lines">
+              <h3 class="sender-title">{{ getCleanSender(selectedMail.sender) }}</h3>
+              <p class="subject-subtitle">{{ selectedMail.subject }}</p>
+              <p class="reply-to-line">Reply-To: {{ getEmailAddressFromSender(selectedMail.sender) }}</p>
+            </div>
+          </div>
+          <div class="meta-right">
+            <span class="full-timestamp">{{ formatFullDate(selectedMail.date) }}</span>
+          </div>
+        </div>
+
+        <!-- Attachment Download Banner -->
+        <div v-if="selectedMail.attachments && selectedMail.attachments.length > 0" class="attachments-panel">
+          <div class="attachments-header">
+            <i class="pi pi-paperclip"></i>
+            <span>Attachments ({{ selectedMail.attachments.length }})</span>
+          </div>
+          <div class="attachments-flex-list">
+            <div v-for="(att, idx) in selectedMail.attachments" :key="idx" class="att-card" @click="downloadMockAttachment(att)">
+              <i class="pi pi-file-pdf"></i>
+              <div class="att-meta">
+                <span class="att-name">{{ att.filename }}</span>
+                <span class="att-size">{{ att.size }}</span>
+              </div>
+              <i class="pi pi-download download-hover"></i>
             </div>
           </div>
         </div>
 
-        <!-- Attachments Box -->
-        <div v-if="selectedMail.attachments && selectedMail.attachments.length > 0" class="attachments-section">
-          <h3>Attachments ({{ selectedMail.attachments.length }})</h3>
-          <div class="attachments-list">
-            <div v-for="(att, idx) in selectedMail.attachments" :key="idx" class="attachment-item">
-              <i class="pi pi-file-pdf pdf-icon"></i>
-              <div class="attachment-meta">
-                <span class="filename">{{ att.filename }}</span>
-                <span class="filesize">{{ att.size }}</span>
-              </div>
-              <p-button icon="pi pi-download" class="p-button-rounded p-button-text p-button-secondary p-button-sm" @click="downloadMockAttachment(att)" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Message Body isolation -->
-        <div class="reading-body">
+        <!-- Sandboxed Iframe Reading Body -->
+        <div class="reading-body-scrollable">
           <iframe 
             :srcdoc="selectedMail.content" 
             sandbox="allow-popups" 
-            class="mail-iframe"
+            class="mail-display-iframe"
             frameborder="0"
           ></iframe>
         </div>
+
+        <!-- Bottom Quick Reply Text Area -->
+        <div class="quick-reply-section">
+          <textarea 
+            v-model="quickReplyText"
+            :placeholder="'Reply ' + getCleanSender(selectedMail.sender) + '...'"
+            class="quick-reply-textarea"
+            rows="3"
+          ></textarea>
+          
+          <div class="quick-reply-controls">
+            <div class="mute-thread-toggle">
+              <checkbox id="mute-thread" v-model="isThreadMuted" :binary="true" />
+              <label for="mute-thread" class="mute-label">Mute this thread</label>
+            </div>
+            
+            <p-button 
+              label="Send" 
+              icon="pi pi-send" 
+              class="p-button-sm p-button-secondary send-reply-btn" 
+              :loading="isSendingReply"
+              @click="submitQuickReply"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Unselected Message Placeholder State -->
+      <div v-else class="unselected-reading-placeholder">
+        <i class="pi pi-envelope open-icon"></i>
+        <h2>No Message Selected</h2>
+        <p>Choose an email from the list to read it here.</p>
       </div>
     </div>
 
@@ -223,23 +343,43 @@ const props = defineProps({
 
 const route = useRoute()
 
+// State management
 const accountEmails = ref([])
 const selectedEmailAddress = ref('')
 const emails = ref([])
 const selectedMail = ref(null)
 const currentFolder = ref('inbox')
+const filterReadState = ref('all') // 'all' or 'unread'
 const mailSearchQuery = ref('')
 
+// Quick Reply States
+const quickReplyText = ref('')
+const isThreadMuted = ref(false)
+const isSendingReply = ref(false)
+
+// Compose States
 const isComposeOpen = ref(false)
 const composeModel = ref({ to: '', subject: '', body: '' })
 
-const folders = [
+// Sidebar folder definitions
+const mainFolders = [
   { id: 'inbox', name: 'Inbox', icon: 'pi pi-inbox' },
-  { id: 'starred', name: 'Starred', icon: 'pi pi-star' },
+  { id: 'drafts', name: 'Drafts', icon: 'pi pi-file' },
   { id: 'sent', name: 'Sent', icon: 'pi pi-send' },
-  { id: 'trash', name: 'Trash', icon: 'pi pi-trash' }
+  { id: 'junk', name: 'Junk', icon: 'pi pi-exclamation-triangle' },
+  { id: 'trash', name: 'Trash', icon: 'pi pi-trash' },
+  { id: 'archive', name: 'Archive', icon: 'pi pi-archive' }
 ]
 
+const categoryFolders = [
+  { id: 'social', name: 'Social', icon: 'pi pi-users' },
+  { id: 'updates', name: 'Updates', icon: 'pi pi-bell' },
+  { id: 'forums', name: 'Forums', icon: 'pi pi-comments' },
+  { id: 'shopping', name: 'Shopping', icon: 'pi pi-shopping-bag' },
+  { id: 'promotions', name: 'Promotions', icon: 'pi pi-percentage' }
+]
+
+// Lifecycles
 onMounted(() => {
   loadMailboxes()
 })
@@ -248,7 +388,6 @@ const loadMailboxes = () => {
   const accounts = accountService.getAccounts()
   accountEmails.value = accounts.map(acc => acc.email)
   
-  // Set selected mailbox from query param / props, or fallback to first
   const emailQuery = props.initialEmail || route.query.email
   if (emailQuery && accountEmails.value.includes(emailQuery)) {
     selectedEmailAddress.value = emailQuery
@@ -262,7 +401,7 @@ const loadMailboxes = () => {
 const loadEmailsForAddress = () => {
   if (selectedEmailAddress.value) {
     emails.value = mailService.getMails(selectedEmailAddress.value)
-    selectedMail.value = null // reset selection
+    selectedMail.value = null
   }
 }
 
@@ -270,52 +409,48 @@ const onMailboxChange = () => {
   loadEmailsForAddress()
 }
 
-// Folder Selection
+// Sidebar logic
 const selectFolder = (folderId) => {
   currentFolder.value = folderId
   selectedMail.value = null
 }
 
-const filteredEmails = computed(() => {
-  let list = [...emails.value]
-  
-  // Filter by folder
-  if (currentFolder.value === 'starred') {
-    list = list.filter(m => m.isStarred)
-  } else if (currentFolder.value === 'sent') {
-    list = list.filter(m => m.isSent)
-  } else if (currentFolder.value === 'trash') {
-    // We don't have separate deleted list, mock folder by checking isDeleted if added later
-    list = [] // empty mock folder
-  } else {
-    // Inbox (non-sent)
-    list = list.filter(m => !m.isSent)
+const setReadFilter = (state) => {
+  filterReadState.value = state
+  selectedMail.value = null
+}
+
+const getFolderTitle = () => {
+  const all = [...mainFolders, ...categoryFolders]
+  const matched = all.find(f => f.id === currentFolder.value)
+  return matched ? matched.name : 'Inbox'
+}
+
+// Badge counters mock logic
+const getFolderCount = (folderId) => {
+  if (folderId === 'inbox') {
+    return emails.value.filter(m => !m.isSent && !m.isRead).length
   }
+  if (folderId === 'drafts') return 9
+  if (folderId === 'junk') return 23
+  if (folderId === 'archive') return 19
+  return 0
+}
 
-  // Filter by search query
-  const query = mailSearchQuery.value.trim().toLowerCase()
-  if (query) {
-    list = list.filter(m => 
-      m.subject.toLowerCase().includes(query) || 
-      m.sender.toLowerCase().includes(query) || 
-      m.content.toLowerCase().includes(query)
-    )
-  }
+const getCategoryCount = (catId) => {
+  if (catId === 'social') return 972
+  if (catId === 'updates') return 342
+  if (catId === 'forums') return 128
+  if (catId === 'shopping') return 8
+  if (catId === 'promotions') return 21
+  return 0
+}
 
-  // Sort by date descending
-  return list.sort((a, b) => new Date(b.date) - new Date(a.date))
-})
-
-const unreadCount = computed(() => {
-  return emails.value.filter(m => !m.isSent && !m.isRead).length
-})
-
-const selectMail = (mail) => {
-  selectedMail.value = mail
-  if (!mail.isRead) {
-    mailService.markAsRead(mail.id, true)
-    mail.isRead = true
-  }
+// Display format helpers
+const getAccountDisplayName = (emailStr) => {
+  if (!emailStr) return ''
+  const prefix = emailStr.split('@')[0]
+  return prefix.charAt(0).toUpperCase() + prefix.slice(1)
 }
 
 const getCleanSender = (senderStr) => {
@@ -323,41 +458,85 @@ const getCleanSender = (senderStr) => {
   return senderStr.split('<')[0].trim()
 }
 
+const getEmailAddressFromSender = (senderStr) => {
+  if (!senderStr) return ''
+  const match = senderStr.match(/<([^>]+)>/)
+  return match ? match[1] : senderStr
+}
+
 const getSnippet = (htmlContent) => {
   if (!htmlContent) return ''
   const doc = new DOMParser().parseFromString(htmlContent, 'text/html')
-  const plainText = doc.body.textContent || ""
-  return plainText.substring(0, 80) + '...'
+  const plainText = doc.body.textContent || ''
+  return plainText.substring(0, 100) + '...'
 }
 
 const getInitials = (senderStr) => {
   const clean = getCleanSender(senderStr)
+  const parts = clean.split(' ')
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
   return clean.substring(0, 2).toUpperCase()
 }
 
-const formatShortDate = (isoString) => {
-  if (!isoString) return ''
-  const date = new Date(isoString)
-  const today = new Date()
-  if (date.toDateString() === today.toDateString()) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+// Time Formatting matching the screenshot
+const relativeTime = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDays = Math.floor(diffHr / 24)
+
+  if (diffDays > 730) {
+    return 'over 2 years ago'
+  } else if (diffDays > 365) {
+    return 'over 1 year ago'
+  } else if (diffDays > 30) {
+    return `${Math.floor(diffDays / 30)} months ago`
+  } else if (diffDays > 0) {
+    return `${diffDays} days ago`
+  } else if (diffHr > 0) {
+    return `${diffHr} hours ago`
+  } else if (diffMin > 0) {
+    return `${diffMin} mins ago`
+  } else {
+    return 'just now'
   }
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
 const formatFullDate = (isoString) => {
   if (!isoString) return ''
   return new Date(isoString).toLocaleString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
+    year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    second: '2-digit'
   })
 }
 
-// Mail Actions
+// Tags UI color coding
+const getTagClass = (tag) => {
+  if (tag === 'important' || tag === 'security') return 'tag-important'
+  if (tag === 'work' || tag === 'billing') return 'tag-work'
+  return 'tag-default'
+}
+
+// Email selection logic
+const selectMail = (mail) => {
+  selectedMail.value = mail
+  quickReplyText.value = ''
+  if (!mail.isRead) {
+    mailService.markAsRead(mail.id, true)
+    mail.isRead = true
+  }
+}
+
 const toggleStar = (mail) => {
   mailService.toggleStar(mail.id)
   mail.isStarred = !mail.isStarred
@@ -370,32 +549,99 @@ const toggleReadState = () => {
   selectedMail.value.isRead = newState
 }
 
+// Active folder emails filtration
+const filteredEmails = computed(() => {
+  let list = [...emails.value]
+
+  // Folder Category logic
+  if (currentFolder.value === 'sent') {
+    list = list.filter(m => m.isSent)
+  } else if (currentFolder.value === 'trash') {
+    list = [] // mock empty trash
+  } else if (currentFolder.value === 'starred') {
+    list = list.filter(m => m.isStarred)
+  } else if (categoryFolders.some(f => f.id === currentFolder.value)) {
+    // Category tags mapping
+    list = list.filter(m => m.tags && m.tags.includes(currentFolder.value))
+  } else {
+    // Default Inbox
+    list = list.filter(m => !m.isSent)
+  }
+
+  // Filter by search
+  const query = mailSearchQuery.value.trim().toLowerCase()
+  if (query) {
+    list = list.filter(m => 
+      m.subject.toLowerCase().includes(query) ||
+      m.sender.toLowerCase().includes(query) ||
+      m.content.toLowerCase().includes(query)
+    )
+  }
+
+  // Unread Toggle filter
+  if (filterReadState.value === 'unread') {
+    list = list.filter(m => !m.isRead)
+  }
+
+  return list.sort((a, b) => new Date(b.date) - new Date(a.date))
+})
+
+// Toolbar Actions
 const deleteMail = () => {
   if (!selectedMail.value) return
-  if (confirm('Delete this message permanently?')) {
+  if (confirm('Move this message to Trash?')) {
     mailService.deleteMail(selectedMail.value.id)
     loadEmailsForAddress()
   }
 }
 
-// Compose dialog triggers
-const openComposeDialog = () => {
-  composeModel.value = { to: '', subject: '', body: '' }
+const archiveActiveMail = () => {
+  alert(`Message "${selectedMail.value.subject}" moved to Archive.`)
+  selectedMail.value = null
+}
+
+const snoozeActiveMail = () => {
+  alert(`Message "${selectedMail.value.subject}" snoozed.`)
+  selectedMail.value = null
+}
+
+const forwardActiveMail = () => {
+  if (!selectedMail.value) return
+  composeModel.value = {
+    to: '',
+    subject: `Fwd: ${selectedMail.value.subject}`,
+    body: `\n\n---------- Forwarded message ---------\nFrom: ${selectedMail.value.sender}\nDate: ${formatFullDate(selectedMail.value.date)}\nSubject: ${selectedMail.value.subject}\n\n` +
+      selectedMail.value.content.replace(/<[^>]*>/g, '')
+  }
   isComposeOpen.value = true
 }
 
-const replyMail = () => {
-  if (!selectedMail.value) return
-  const originalSender = selectedMail.value.sender
-  const match = originalSender.match(/<([^>]+)>/)
-  const toAddress = match ? match[1] : originalSender
+// Quick Reply submit
+const submitQuickReply = () => {
+  if (!quickReplyText.value.trim()) return
+  
+  isSendingReply.value = true
+  setTimeout(() => {
+    const cleanTo = getEmailAddressFromSender(selectedMail.value.sender)
+    
+    // Simulate sending reply
+    mailService.sendMail(
+      selectedEmailAddress.value,
+      cleanTo,
+      `Re: ${selectedMail.value.subject}`,
+      quickReplyText.value.trim()
+    )
 
-  composeModel.value = {
-    to: toAddress,
-    subject: `Re: ${selectedMail.value.subject}`,
-    body: `\n\nOn ${formatFullDate(selectedMail.value.date)}, ${selectedMail.value.sender} wrote:\n> ` + 
-      selectedMail.value.content.replace(/<[^>]*>/g, '').split('\n').join('\n> ')
-  }
+    isSendingReply.value = false
+    quickReplyText.value = ''
+    loadEmailsForAddress()
+    alert('Reply sent successfully!')
+  }, 800)
+}
+
+// Dialog Compose mail
+const openComposeDialog = () => {
+  composeModel.value = { to: '', subject: '', body: '' }
   isComposeOpen.value = true
 }
 
@@ -406,7 +652,6 @@ const handleSendMail = () => {
     return
   }
 
-  // Simulate sending mail
   mailService.sendMail(
     selectedEmailAddress.value,
     model.to.trim(),
@@ -420,10 +665,10 @@ const handleSendMail = () => {
 }
 
 const downloadMockAttachment = (att) => {
-  alert(`Triggered download for mock attachment: ${att.filename} (${att.size})`)
+  alert(`Downloading attachment: ${att.filename} (${att.size})`)
 }
 
-// Watch initialEmail parameter change (e.g. navigation from accounts page)
+// Watch initialEmail parameter change
 watch(() => props.initialEmail, (newEmail) => {
   if (newEmail && accountEmails.value.includes(newEmail)) {
     selectedEmailAddress.value = newEmail
@@ -433,422 +678,698 @@ watch(() => props.initialEmail, (newEmail) => {
 </script>
 
 <style scoped>
-.webmail-view {
+/* Dark Slate Theme matching Shadcn-ui exactly */
+.webmail-dark-container {
   display: grid;
-  grid-template-columns: 240px 320px 1fr;
+  grid-template-columns: 260px 360px 1fr;
   height: calc(100vh - 130px);
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: #09090b; /* Zinc 950 */
+  color: #fafafa; /* Zinc 50 */
+  border: 1px solid #27272a; /* Zinc 800 */
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 @media (max-width: 1200px) {
-  .webmail-view {
-    grid-template-columns: 200px 280px 1fr;
+  .webmail-dark-container {
+    grid-template-columns: 220px 300px 1fr;
   }
 }
 
-/* Sidebar Columns styles */
-.webmail-sidebar {
-  border-right: 1px solid #e2e8f0;
-  background-color: #f8fafc;
-  padding: 20px;
+/* 1. LEFT SIDEBAR STYLES */
+.webmail-left-sidebar {
+  background-color: #09090b;
+  border-right: 1px solid #27272a;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
   box-sizing: border-box;
 }
 
-.mailbox-select-card h3 {
-  margin: 0 0 10px 0;
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 600;
-  text-transform: uppercase;
-  text-align: left;
-  letter-spacing: 0.5px;
+.account-header {
+  margin-bottom: 20px;
 }
 
-.folders-menu {
+/* Custom styled PrimeVue Dropdown for account switcher */
+:deep(.account-dropdown) {
+  background: #09090b !important;
+  border: 1px solid #27272a !important;
+  color: #fafafa !important;
+  border-radius: 6px !important;
+  padding: 2px 4px !important;
+}
+
+:deep(.account-dropdown:hover) {
+  border-color: #3f3f46 !important;
+}
+
+:deep(.account-dropdown .p-dropdown-trigger) {
+  color: #a1a1aa !important;
+}
+
+:deep(.account-dropdown .p-dropdown-panel) {
+  background-color: #09090b !important;
+  border: 1px solid #27272a !important;
+  color: #fafafa !important;
+}
+
+:deep(.account-dropdown .p-dropdown-items-wrapper) {
+  background-color: #09090b !important;
+}
+
+:deep(.account-dropdown .p-dropdown-item) {
+  color: #e4e4e7 !important;
+  padding: 8px 12px !important;
+}
+
+:deep(.account-dropdown .p-dropdown-item:hover),
+:deep(.account-dropdown .p-dropdown-item.p-highlight) {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+.account-dropdown-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.account-avatar-icon {
+  font-size: 14px;
+  color: #a1a1aa;
+  background-color: #18181b;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+.account-name-text {
+  font-weight: 500;
+  font-size: 14px;
+  color: #fafafa;
+}
+
+.menu-section {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  flex-grow: 1;
+  gap: 4px;
 }
 
-.folder-item {
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #a1a1aa; /* Zinc 400 */
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.menu-item:hover {
+  background-color: #18181b; /* Zinc 900 */
+  color: #fafafa;
+}
+
+.menu-item.active {
+  background-color: #27272a; /* Zinc 800 */
+  color: #ffffff;
+}
+
+.item-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #475569;
+}
+
+.item-left i {
+  font-size: 15px;
+  width: 16px;
+  text-align: center;
+}
+
+.item-badge {
+  background-color: #18181b;
+  color: #fafafa;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #27272a;
+}
+
+.menu-divider {
+  border: 0;
+  border-top: 1px solid #27272a;
+  margin: 15px 0;
+}
+
+.sidebar-compose-footer {
+  margin-top: auto;
+  padding-top: 15px;
+}
+
+.compose-action-btn {
+  background-color: #fafafa !important;
+  color: #09090b !important;
+  border: none !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+}
+
+.compose-action-btn:hover {
+  background-color: #e4e4e7 !important;
+}
+
+/* 2. MIDDLE COLUMN STYLES */
+.webmail-middle-column {
+  border-right: 1px solid #27272a;
+  background-color: #09090b;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.middle-column-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #27272a;
+}
+
+.folder-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: #fafafa;
+}
+
+.filter-tabs {
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  padding: 2px;
+  display: flex;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  font-size: 13px;
   font-weight: 500;
-  font-size: 14px;
-  transition: all 0.2s;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab-btn:hover {
+  color: #fafafa;
+}
+
+.tab-btn.active {
+  background-color: #27272a;
+  color: #ffffff;
+}
+
+.search-box-container {
+  padding: 12px 20px;
+  border-bottom: 1px solid #27272a;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #71717a;
+  font-size: 13px;
+}
+
+.search-input-field {
+  width: 100%;
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+  border-radius: 6px !important;
+  padding: 8px 12px 8px 36px !important;
+  font-size: 14px !important;
+  color: #fafafa !important;
+}
+
+.search-input-field:focus {
+  border-color: #3f3f46 !important;
+}
+
+.emails-scroll-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-emails-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  color: #71717a;
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+/* Email Card Item */
+.email-card-item {
+  background-color: #09090b;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   position: relative;
 }
 
-.folder-item i {
-  font-size: 16px;
-  color: #64748b;
+.email-card-item:hover {
+  background-color: #18181b;
 }
 
-.folder-item:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+.email-card-item.selected {
+  background-color: #27272a; /* Zinc 800 */
+  border-color: #3f3f46;
 }
 
-.folder-item.active {
-  background-color: #e0f2fe;
-  color: #0369a1;
+.card-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.folder-item.active i {
-  color: #0369a1;
+.email-card-item .sender {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fafafa;
 }
 
-.badge-count {
-  position: absolute;
-  right: 15px;
-  background-color: #0ea5e9;
-  color: white;
+.email-card-item .time {
+  font-size: 12px;
+  color: #71717a;
+}
+
+.card-subject-line {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fafafa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 15px;
+}
+
+.unread .card-subject-line {
+  font-weight: 700;
+}
+
+.unread-dot-indicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: #3b82f6; /* Blue 500 */
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.card-snippet-line {
+  font-size: 12px;
+  color: #a1a1aa; /* Zinc 400 */
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-tags-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.tag-pill {
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
 }
 
-.compose-btn {
-  background-color: #0ea5e9;
-  border-color: #0ea5e9;
-  font-weight: 600;
-}
-.compose-btn:hover {
-  background-color: #0284c7 !important;
-  border-color: #0284c7 !important;
+.tag-important {
+  background-color: #fafafa;
+  color: #09090b;
 }
 
-/* Email List Column styles */
-.email-list-column {
-  border-right: 1px solid #e2e8f0;
+.tag-work {
+  background-color: #27272a;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+}
+
+.tag-default {
+  background-color: #18181b;
+  color: #a1a1aa;
+  border: 1px solid #27272a;
+}
+
+/* 3. RIGHT COLUMN STYLES */
+.webmail-right-column {
+  background-color: #09090b;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
 }
 
-.list-header {
-  padding: 15px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.search-mail {
-  background-color: #f8fafc;
-}
-
-.emails-container {
-  flex-grow: 1;
-  overflow-y: auto;
-}
-
-.empty-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 50px 20px;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.mail-summary-card {
-  padding: 15px;
-  border-bottom: 1px solid #f1f5f9;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  text-align: left;
-}
-
-.mail-summary-card:hover {
-  background-color: #f8fafc;
-}
-
-.mail-summary-card.active {
-  background-color: #f0f9ff;
-}
-
-.mail-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sender-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-}
-
-.unread .sender-name {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.mail-date {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.mail-subject-row {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.subject {
-  font-size: 14px;
-  font-weight: 500;
-  color: #334155;
-}
-
-.unread .subject {
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.mail-snippet-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.snippet {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.3;
-  flex-grow: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mail-markers {
-  margin-left: 10px;
-  flex-shrink: 0;
-}
-
-.mail-markers i {
-  font-size: 14px;
-  color: #cbd5e1;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.mail-markers i:hover, .star-active {
-  color: #eab308 !important;
-}
-
-/* Email Reading Pane Styles */
-.email-reading-column {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background-color: #f8fafc;
-}
-
-.empty-reading-pane {
+.unselected-reading-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex-grow: 1;
-  padding: 50px;
-  color: #94a3b8;
+  color: #71717a;
+  padding: 40px;
 }
 
-.empty-reading-pane h2 {
-  font-size: 20px;
-  color: #475569;
-  margin: 0 0 8px 0;
+.unselected-reading-placeholder .open-icon {
+  font-size: 40px;
+  color: #27272a;
+  margin-bottom: 15px;
 }
 
-.empty-reading-pane p {
-  font-size: 14px;
-  color: #64748b;
+.unselected-reading-placeholder h2 {
+  font-size: 18px;
   margin: 0;
+  color: #e4e4e7;
 }
 
-.reading-pane {
+.unselected-reading-placeholder p {
+  font-size: 14px;
+  margin: 8px 0 0 0;
+}
+
+.active-reading-layout {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: #ffffff;
 }
 
-.reading-action-bar {
-  height: 50px;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 0 20px;
+/* Toolbar actions inside message pane */
+.reading-toolbar {
+  height: 52px;
+  border-bottom: 1px solid #27272a;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background-color: #f8fafc;
+  justify-content: flex-start;
+  gap: 4px;
   flex-shrink: 0;
 }
 
-.left-actions {
+.toolbar-left {
   display: flex;
-  gap: 10px;
+  gap: 4px;
 }
 
-.star-active-text {
-  color: #eab308 !important;
+.toolbar-right {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
-.reading-header {
-  padding: 25px 25px 15px 25px;
-  border-bottom: 1px solid #f1f5f9;
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: #27272a;
+  margin: 0 10px;
+}
+
+.toolbar-divider.inline {
+  margin: 0 6px;
+}
+
+:deep(.toolbar-btn) {
+  background: none !important;
+  border: none !important;
+  color: #a1a1aa !important;
+  border-radius: 6px !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:deep(.toolbar-btn:hover) {
+  background-color: #18181b !important;
+  color: #fafafa !important;
+}
+
+:deep(.toolbar-btn.text-red-hover:hover) {
+  color: #ef4444 !important;
+}
+
+/* Message Meta block */
+.reading-meta-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #27272a;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   text-align: left;
   flex-shrink: 0;
 }
 
-.subject-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 15px 0;
-}
-
-.sender-info-block {
+.meta-left {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.sender-info-block .avatar {
-  width: 42px;
-  height: 42px;
+.avatar-initials-circle {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: #e0f2fe;
-  color: #0369a1;
+  background-color: #27272a;
+  color: #fafafa;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 15px;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.sender-details {
+.meta-sender-lines {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  gap: 4px;
 }
 
-.sender-line, .recipient-line {
+.sender-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.subject-subtitle {
   font-size: 13px;
-  line-height: 1.4;
+  color: #fafafa;
+  margin: 0;
 }
 
-.from-label, .to-label {
-  color: #64748b;
-  margin-right: 5px;
+.reply-to-line {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 0;
 }
 
-.from-val {
-  color: #1e293b;
+.meta-right {
+  font-size: 12px;
+  color: #71717a;
 }
 
-.to-val {
-  color: #64748b;
-}
-
-.date-line {
-  font-size: 13px;
-  color: #64748b;
-}
-
-/* Attachments styles */
-.attachments-section {
-  padding: 15px 25px;
-  background-color: #f8fafc;
-  border-bottom: 1px solid #f1f5f9;
+/* Attachments Panel */
+.attachments-panel {
+  padding: 12px 24px;
+  background-color: #09090b;
+  border-bottom: 1px solid #27272a;
   text-align: left;
   flex-shrink: 0;
 }
 
-.attachments-section h3 {
-  margin: 0 0 10px 0;
-  font-size: 13px;
-  color: #475569;
+.attachments-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
   font-weight: 600;
+  color: #a1a1aa;
+  margin-bottom: 8px;
 }
 
-.attachments-list {
+.attachments-flex-list {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.attachment-item {
-  background: white;
-  border: 1px solid #cbd5e1;
+.att-card {
+  background-color: #18181b;
+  border: 1px solid #27272a;
   border-radius: 6px;
   padding: 8px 12px;
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.pdf-icon {
+.att-card:hover {
+  border-color: #3f3f46;
+}
+
+.att-card i.pi-file-pdf {
   color: #ef4444;
-  font-size: 20px;
+  font-size: 18px;
 }
 
-.attachment-meta {
+.att-meta {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
 }
 
-.filename {
-  font-size: 13px;
+.att-name {
+  font-size: 12px;
   font-weight: 600;
-  color: #1e293b;
+  color: #fafafa;
 }
 
-.filesize {
-  font-size: 11px;
-  color: #64748b;
+.att-size {
+  font-size: 10px;
+  color: #71717a;
 }
 
-/* Isolated Iframe Content */
-.reading-body {
+.download-hover {
+  color: #71717a;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.att-card:hover .download-hover {
+  color: #fafafa;
+}
+
+/* Scrollable Iframe Panel */
+.reading-body-scrollable {
   flex-grow: 1;
   position: relative;
-  overflow: hidden;
+  background-color: #ffffff; /* White background inside reading body for clean email rendering */
 }
 
-.mail-iframe {
+.mail-display-iframe {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   border: none;
-  background-color: #ffffff;
 }
 
-/* Form layouts */
+/* Quick Reply Section at Bottom */
+.quick-reply-section {
+  border-top: 1px solid #27272a;
+  padding: 16px 24px;
+  background-color: #09090b;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.quick-reply-textarea {
+  width: 100%;
+  background-color: #09090b;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  color: #fafafa;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.quick-reply-textarea:focus {
+  outline: none;
+  border-color: #3f3f46;
+}
+
+.quick-reply-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mute-thread-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mute-label {
+  font-size: 12px;
+  color: #71717a;
+  cursor: pointer;
+}
+
+.send-reply-btn {
+  background-color: #fafafa !important;
+  color: #09090b !important;
+  border: none !important;
+  font-weight: 600 !important;
+}
+
+.send-reply-btn:hover {
+  background-color: #e4e4e7 !important;
+}
+
+/* Compose form fields inside dialog */
 .form-fields {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
   padding: 10px 0;
   text-align: left;
 }
@@ -856,33 +1377,60 @@ watch(() => props.initialEmail, (newEmail) => {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #334155;
-}
-
-.w-full {
-  width: 100%;
+  color: #e4e4e7;
 }
 
 .text-area {
-  border: 1px solid #cbd5e1;
+  border: 1px solid #27272a;
+  background-color: #18181b;
+  color: #fafafa;
   border-radius: 6px;
   padding: 10px;
   font-family: inherit;
   resize: vertical;
 }
 
-.brand-btn {
-  background-color: #0ea5e9;
-  border-color: #0ea5e9;
+.text-area:focus {
+  outline: none;
+  border-color: #3f3f46;
 }
+
+:deep(.p-dialog) {
+  background-color: #09090b !important;
+  border: 1px solid #27272a !important;
+  color: #fafafa !important;
+}
+
+:deep(.p-dialog-header) {
+  background-color: #09090b !important;
+  border-bottom: 1px solid #27272a !important;
+  color: #fafafa !important;
+}
+
+:deep(.p-dialog-content) {
+  background-color: #09090b !important;
+  color: #fafafa !important;
+}
+
+:deep(.p-dialog-footer) {
+  background-color: #09090b !important;
+  border-top: 1px solid #27272a !important;
+}
+
+.brand-btn {
+  background-color: #fafafa !important;
+  color: #09090b !important;
+  border: none !important;
+  font-weight: 600 !important;
+}
+
 .brand-btn:hover {
-  background-color: #0284c7 !important;
-  border-color: #0284c7 !important;
+  background-color: #e4e4e7 !important;
 }
 </style>
