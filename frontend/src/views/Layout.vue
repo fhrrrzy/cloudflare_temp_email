@@ -51,7 +51,7 @@
             </div>
           </div>
           
-          <p-button 
+          <Button 
             icon="pi pi-sign-out" 
             label="Logout" 
             class="p-button-text p-button-secondary logout-button" 

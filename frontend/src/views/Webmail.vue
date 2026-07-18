@@ -63,7 +63,7 @@
 
       <!-- Bottom Compose Button -->
       <div class="sidebar-compose-footer">
-        <p-button 
+        <Button 
           label="Compose Mail" 
           icon="pi pi-pencil" 
           class="w-full p-button-sm compose-action-btn" 
@@ -158,13 +158,13 @@
         <!-- Reading Header Actions -->
         <div class="reading-toolbar">
           <div class="toolbar-left">
-            <p-button 
+            <Button 
               icon="pi pi-archive" 
               class="toolbar-btn" 
               v-tooltip.top="'Archive'" 
               @click="archiveActiveMail"
             />
-            <p-button 
+            <Button 
               icon="pi pi-trash" 
               class="toolbar-btn text-red-hover" 
               v-tooltip.top="'Move to Trash'" 
@@ -175,7 +175,7 @@
           <div class="toolbar-divider"></div>
 
           <div class="toolbar-left">
-            <p-button 
+            <Button 
               icon="pi pi-clock" 
               class="toolbar-btn" 
               v-tooltip.top="'Snooze'" 
@@ -184,26 +184,26 @@
           </div>
 
           <div class="toolbar-right">
-            <p-button 
+            <Button 
               icon="pi pi-reply" 
               class="toolbar-btn" 
               v-tooltip.top="'Reply'" 
               @click="replyMail"
             />
-            <p-button 
+            <Button 
               icon="pi pi-reply" 
               class="toolbar-btn pi-flip-h" 
               v-tooltip.top="'Reply All'" 
               @click="replyMail"
             />
-            <p-button 
+            <Button 
               icon="pi pi-arrow-right" 
               class="toolbar-btn" 
               v-tooltip.top="'Forward'" 
               @click="forwardActiveMail"
             />
             <div class="toolbar-divider inline"></div>
-            <p-button 
+            <Button 
               icon="pi pi-ellipsis-v" 
               class="toolbar-btn" 
               v-tooltip.top="'More actions'" 
@@ -271,7 +271,7 @@
               <label for="mute-thread" class="mute-label">Mute this thread</label>
             </div>
             
-            <p-button 
+            <Button 
               label="Send" 
               icon="pi pi-send" 
               class="p-button-sm p-button-secondary send-reply-btn" 
@@ -321,8 +321,8 @@
       </div>
       
       <template #footer>
-        <p-button label="Discard" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isComposeOpen = false" />
-        <p-button label="Send" icon="pi pi-send" class="brand-btn" @click="handleSendMail" />
+        <Button label="Discard" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isComposeOpen = false" />
+        <Button label="Send" icon="pi pi-send" class="brand-btn" @click="handleSendMail" />
       </template>
     </p-dialog>
   </div>

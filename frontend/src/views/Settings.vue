@@ -96,13 +96,13 @@
       
       <!-- Save actions -->
       <div class="actions-footer">
-        <p-button 
+        <Button 
           label="Reset defaults" 
           icon="pi pi-refresh" 
           class="p-button-outlined p-button-secondary" 
           @click="resetSettings" 
         />
-        <p-button 
+        <Button 
           label="Save Settings" 
           icon="pi pi-save" 
           class="brand-btn" 

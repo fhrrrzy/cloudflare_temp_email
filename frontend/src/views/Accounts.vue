@@ -10,19 +10,19 @@
       </div>
 
       <div class="btn-group">
-        <p-button 
+        <Button 
           label="Single Account" 
           icon="pi pi-user-plus" 
           class="p-button-outlined p-button-sm" 
           @click="openSingleCreateDialog" 
         />
-        <p-button 
+        <Button 
           label="Bulk Create" 
           icon="pi pi-users" 
           class="p-button-sm brand-btn" 
           @click="openBulkCreateDialog" 
         />
-        <p-button 
+        <Button 
           label="Export All" 
           icon="pi pi-download" 
           class="p-button-outlined p-button-secondary p-button-sm" 
@@ -71,28 +71,28 @@
           <template #body="slotProps">
             <div class="action-buttons">
               <!-- Open Webmail -->
-              <p-button 
+              <Button 
                 icon="pi pi-envelope" 
                 class="p-button-rounded p-button-text p-button-sm" 
                 v-tooltip.top="'Open Webmail'"
                 @click="openWebmail(slotProps.data.email)"
               />
               <!-- View details -->
-              <p-button 
+              <Button 
                 icon="pi pi-eye" 
                 class="p-button-rounded p-button-text p-button-info p-button-sm" 
                 v-tooltip.top="'View Details'"
                 @click="viewDetails(slotProps.data)"
               />
               <!-- Copy credentials -->
-              <p-button 
+              <Button 
                 icon="pi pi-copy" 
                 class="p-button-rounded p-button-text p-button-warning p-button-sm" 
                 v-tooltip.top="'Copy Credentials'"
                 @click="copyCredentials(slotProps.data)"
               />
               <!-- Delete account -->
-              <p-button 
+              <Button 
                 icon="pi pi-trash" 
                 class="p-button-rounded p-button-text p-button-danger p-button-sm" 
                 v-tooltip.top="'Delete Account'"
@@ -107,13 +107,13 @@
       <div v-if="selectedAccounts.length > 0" class="bulk-footer">
         <span>Selected: <strong>{{ selectedAccounts.length }}</strong> accounts</span>
         <div class="bulk-buttons">
-          <p-button 
+          <Button 
             label="Export Selected" 
             icon="pi pi-download" 
             class="p-button-outlined p-button-secondary p-button-sm"
             @click="exportSelected" 
           />
-          <p-button 
+          <Button 
             label="Delete Selected" 
             icon="pi pi-trash" 
             class="p-button-danger p-button-sm"
@@ -141,8 +141,8 @@
       </div>
       
       <template #footer>
-        <p-button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isSingleCreateOpen = false" />
-        <p-button label="Create" icon="pi pi-check" class="brand-btn" @click="handleCreateSingle" />
+        <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isSingleCreateOpen = false" />
+        <Button label="Create" icon="pi pi-check" class="brand-btn" @click="handleCreateSingle" />
       </template>
     </p-dialog>
 
@@ -207,13 +207,13 @@
       <template #footer>
         <!-- Step 1 Actions -->
         <div v-if="bulkStep === 1" class="dialog-foot">
-          <p-button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isBulkCreateOpen = false" />
-          <p-button label="Next: Preview" icon="pi pi-angle-right" class="brand-btn" @click="generateBulkPreview" />
+          <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isBulkCreateOpen = false" />
+          <Button label="Next: Preview" icon="pi pi-angle-right" class="brand-btn" @click="generateBulkPreview" />
         </div>
         <!-- Step 2 Actions -->
         <div v-if="bulkStep === 2" class="dialog-foot">
-          <p-button label="Back" icon="pi pi-angle-left" class="p-button-text p-button-secondary" @click="bulkStep = 1" />
-          <p-button label="Confirm & Create" icon="pi pi-check" class="brand-btn" :loading="isBulkSubmitting" @click="handleConfirmBulkCreate" />
+          <Button label="Back" icon="pi pi-angle-left" class="p-button-text p-button-secondary" @click="bulkStep = 1" />
+          <Button label="Confirm & Create" icon="pi pi-check" class="brand-btn" :loading="isBulkSubmitting" @click="handleConfirmBulkCreate" />
         </div>
       </template>
     </p-dialog>
@@ -250,8 +250,8 @@
         </div>
       </div>
       <template #footer>
-        <p-button label="Close" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isDetailsOpen = false" />
-        <p-button label="Login to Webmail" icon="pi pi-envelope" class="brand-btn" @click="openWebmail(selectedDetailAccount?.email)" />
+        <Button label="Close" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isDetailsOpen = false" />
+        <Button label="Login to Webmail" icon="pi pi-envelope" class="brand-btn" @click="openWebmail(selectedDetailAccount?.email)" />
       </template>
     </p-dialog>
 
@@ -273,8 +273,8 @@
         </div>
       </div>
       <template #footer>
-        <p-button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isExportOpen = false" />
-        <p-button label="Export" icon="pi pi-download" class="brand-btn" @click="triggerExport" />
+        <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isExportOpen = false" />
+        <Button label="Export" icon="pi pi-download" class="brand-btn" @click="triggerExport" />
       </template>
     </p-dialog>
   </div>

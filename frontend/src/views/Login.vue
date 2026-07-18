@@ -85,13 +85,12 @@
               <span>{{ error }}</span>
             </div>
 
-            <p-button 
+            <Button 
               type="submit" 
+              label="Sign in"
               class="w-full form-submit-btn" 
               :loading="loading"
-            >
-              <span class="p-button-label">Sign in</span>
-            </p-button>
+            />
           </form>
 
           <p class="panel-footer-note">

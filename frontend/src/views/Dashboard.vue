@@ -49,7 +49,7 @@
       <div class="card recent-accounts-card">
         <div class="card-header">
           <h2>Recently Created Accounts</h2>
-          <p-button 
+          <Button 
             label="View All" 
             icon="pi pi-arrow-right" 
             class="p-button-text p-button-sm" 
