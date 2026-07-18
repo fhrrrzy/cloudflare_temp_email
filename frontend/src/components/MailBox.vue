@@ -1,17 +1,29 @@
 <script setup>
 import { watch, onMounted, ref, onBeforeUnmount, computed } from "vue";
-import { useMessage } from 'naive-ui'
 import { useScopedI18n } from '@/i18n/app'
 import { useGlobalState } from '../store'
-import { CloudDownloadRound, ArrowBackIosNewFilled, ArrowForwardIosFilled, InboxRound } from '@vicons/material'
+import { 
+  Download, ArrowLeft, ArrowRight, Inbox, RefreshCw, Trash2, 
+  Check, CheckSquare, Square, Eye, Mail, Search, ChevronRight, Loader2
+} from 'lucide-vue-next'
 import { useIsMobile } from '../utils/composables'
 import { processItem } from '../utils/email-parser'
 import { utcToLocalDate } from '../utils';
 import { buildReplyModel, buildForwardModel } from '../utils/mail-actions'
 import MailContentRenderer from "./MailContentRenderer.vue";
 import AiExtractInfo from "./AiExtractInfo.vue";
+import { toast } from 'vue-sonner'
 
-const message = useMessage()
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+
 const isMobile = useIsMobile()
 
 const props = defineProps({
@@ -141,13 +153,12 @@ const curMail = ref(null);
 const multiActionMode = ref(false)
 const showMultiActionDownload = ref(false)
 const showMultiActionDelete = ref(false)
-const multiActionDownloadZip = ref({})
+const multiActionDownloadZip = ref({ url: '', filename: '' })
 const multiActionDeleteProgress = ref({ percentage: 0, tip: '0/0' })
 
 const { t } = useScopedI18n('components.MailBox')
 
 const setupAutoRefresh = async (autoRefresh) => {
-  // auto refresh every configAutoRefreshInterval seconds
   autoRefreshInterval.value = configAutoRefreshInterval.value;
   if (autoRefresh) {
     clearInterval(timer.value);
@@ -165,7 +176,7 @@ const setupAutoRefresh = async (autoRefresh) => {
   }
 }
 
-watch(autoRefresh, async (autoRefresh, old) => {
+watch(autoRefresh, async (autoRefresh) => {
   setupAutoRefresh(autoRefresh)
 }, { immediate: true })
 
@@ -193,7 +204,7 @@ const refresh = async () => {
       curMail.value = data.value[0];
     }
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
     console.error(error);
   } finally {
     loading.value = false;
@@ -218,19 +229,14 @@ const clickRow = async (row) => {
   curMail.value = row;
 };
 
-
-const mailItemClass = (row) => {
-  return curMail.value && row.id == curMail.value.id ? (isDark.value ? 'overlay overlay-dark-backgroud' : 'overlay overlay-light-backgroud') : '';
-};
-
 const deleteMail = async () => {
   try {
     await props.deleteMail(curMail.value.id);
-    message.success(t("success"));
+    toast.success(t("success"));
     curMail.value = null;
     await refresh();
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
   }
 };
 
@@ -243,10 +249,6 @@ const forwardMail = async () => {
   Object.assign(sendMailModel.value, buildForwardModel(curMail.value, t('forwardMail')));
   indexTab.value = 'sendmail';
 };
-
-const onSpiltSizeChange = (size) => {
-  mailboxSplitSize.value = size;
-}
 
 const saveToS3Proxy = async (filename, blob) => {
   await props.saveToS3(curMail.value.id, filename, blob);
@@ -277,7 +279,7 @@ const multiActionDeleteMail = async () => {
     loading.value = true;
     const selectedMails = data.value.filter((item) => item.checked);
     if (selectedMails.length === 0) {
-      message.error(t('pleaseSelectMail'));
+      toast.error(t('pleaseSelectMail'));
       return;
     }
     multiActionDeleteProgress.value = {
@@ -292,13 +294,13 @@ const multiActionDeleteMail = async () => {
         tip: `${index + 1}/${selectedMails.length}`
       };
     }
-    message.success(t("success"));
+    toast.success(t("success"));
     await refresh();
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
   } finally {
     loading.value = false;
-    showMultiActionDelete.value = true;
+    showMultiActionDelete.value = false;
   }
 }
 
@@ -307,11 +309,11 @@ const multiActionDownload = async () => {
     loading.value = true;
     const selectedMails = data.value.filter((item) => item.checked);
     if (selectedMails.length === 0) {
-      message.error(t('pleaseSelectMail'));
+      toast.error(t('pleaseSelectMail'));
       return;
     }
-    const JSZipModlue = await import('jszip');
-    const JSZip = JSZipModlue.default;
+    const JSZipModule = await import('jszip');
+    const JSZip = JSZipModule.default;
     const zip = new JSZip();
     for (const mail of selectedMails) {
       zip.file(`${mail.id}.eml`, mail.raw);
@@ -322,11 +324,13 @@ const multiActionDownload = async () => {
     }
     showMultiActionDownload.value = true;
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
   } finally {
     loading.value = false;
   }
 }
+
+const totalPages = computed(() => Math.ceil(count.value / pageSize.value) || 1)
 
 onMounted(async () => {
   await refresh();
@@ -338,365 +342,290 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div>
-    <div v-if="!isMobile" class="left">
-      <div style="margin-bottom: 10px;">
-        <n-space v-if="multiActionMode" align="center">
-          <n-button @click="multiActionModeClick(false)" tertiary>
-            {{ t('cancelMultiAction') }}
-          </n-button>
-          <n-button @click="multiActionSelectAll(true)" tertiary>
-            {{ t('selectAll') }}
-          </n-button>
-          <n-button @click="multiActionSelectAll(false)" tertiary>
-            {{ t('unselectAll') }}
-          </n-button>
-          <n-popconfirm v-if="enableUserDeleteEmail" @positive-click="multiActionDeleteMail">
-            <template #trigger>
-              <n-button tertiary type="error">{{ t('delete') }}</n-button>
-            </template>
-            {{ t('deleteMailTip') }}
-          </n-popconfirm>
-          <n-button @click="multiActionDownload" tertiary type="info">
-            <template #icon>
-              <n-icon :component="CloudDownloadRound" />
-            </template>
-            {{ t('downloadMail') }}
-          </n-button>
-        </n-space>
-        <n-space v-else align="center">
-          <n-button @click="multiActionModeClick(true)" type="primary" tertiary>
-            {{ t('multiAction') }}
-          </n-button>
-          <n-pagination v-model:page="page" v-model:page-size="pageSize" :item-count="count" :page-sizes="[20, 50, 100]"
-            show-size-picker />
-          <n-switch v-model:value="autoRefresh" :round="false">
-            <template #checked>
-              {{ t('refreshAfter', { msg: autoRefreshInterval }) }}
-            </template>
-            <template #unchecked>
-              {{ t('autoRefresh') }}
-            </template>
-          </n-switch>
-          <n-button @click="backFirstPageAndRefresh" type="primary" tertiary>
-            {{ t('refresh') }}
-          </n-button>
-          <n-input v-if="showFilterInput" v-model:value="localFilterKeyword"
-            :placeholder="t('keywordQueryTip')" style="width: 200px; display: flex; align-items: center;"
-            clearable />
-        </n-space>
+  <div class="space-y-4">
+    <!-- Action / Pagination Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/40 p-4 border border-zinc-800 rounded-xl">
+      <!-- Left: Bulk actions -->
+      <div v-if="multiActionMode" class="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" @click="multiActionModeClick(false)" class="border-zinc-800 bg-zinc-950">
+          {{ t('cancelMultiAction') }}
+        </Button>
+        <Button size="sm" variant="outline" @click="multiActionSelectAll(true)" class="border-zinc-800 bg-zinc-950">
+          {{ t('selectAll') }}
+        </Button>
+        <Button size="sm" variant="outline" @click="multiActionSelectAll(false)" class="border-zinc-800 bg-zinc-950">
+          {{ t('unselectAll') }}
+        </Button>
+        <Button 
+          v-if="enableUserDeleteEmail" 
+          size="sm" 
+          variant="destructive" 
+          @click="multiActionDeleteMail"
+          class="font-semibold"
+        >
+          {{ t('delete') }}
+        </Button>
+        <Button size="sm" variant="secondary" @click="multiActionDownload" class="gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200">
+          <Download class="h-4 w-4" />
+          <span>{{ t('downloadMail') }}</span>
+        </Button>
       </div>
-      <n-split class="left" direction="horizontal" :max="0.75" :min="0" :resize-trigger-size="8"
-        :default-size="mailboxSplitSize" :on-update:size="onSpiltSizeChange" v-if="!mailListView || curMail">
-        <template #resize-trigger>
-          <div class="split-handle">
-            <div class="split-handle__grip" />
-          </div>
-        </template>
-        <template #1>
-          <div style="overflow: auto; min-height: 60vh; max-height: 100vh;">
-            <n-list hoverable clickable>
-              <n-list-item v-for="row in data" v-bind:key="row.id" @click="() => clickRow(row)"
-                :class="mailItemClass(row)">
-                <template #prefix v-if="multiActionMode">
-                  <n-checkbox v-model:checked="row.checked" />
-                </template>
-                <n-thing :title="row.subject">
-                  <template #description>
-                    <n-tag type="info">
-                      ID: {{ row.id }}
-                    </n-tag>
-                    <n-tag type="info">
-                      {{ utcToLocalDate(row.created_at, useUTCDate) }}
-                    </n-tag>
-                    <n-tag type="info">
-                      <n-ellipsis style="max-width: 240px;">
-                        {{ showEMailTo ? "FROM: " + row.source : row.source }}
-                      </n-ellipsis>
-                    </n-tag>
-                    <n-tag v-if="showEMailTo" type="info">
-                      <n-ellipsis style="max-width: 240px;">
-                        TO: {{ row.address }}
-                      </n-ellipsis>
-                    </n-tag>
-                    <AiExtractInfo :metadata="row.metadata" compact />
-                  </template>
-                </n-thing>
-              </n-list-item>
-            </n-list>
-          </div>
-        </template>
-        <template #2>
-          <div v-if="curMail" style="margin: 8px;">
-            <n-flex justify="space-between" align="center">
-              <n-space :wrap="false" align="center">
-                <n-button v-if="mailListView" @click="curMail = null" text size="small">
-                  <template #icon>
-                    <n-icon>
-                      <ArrowBackIosNewFilled />
-                    </n-icon>
-                  </template>
-                  {{ t('backToList') }}
-                </n-button>
-                <n-button @click="prevMail" :disabled="!canGoPrevMail" text size="small">
-                  <template #icon>
-                    <n-icon>
-                      <ArrowBackIosNewFilled />
-                    </n-icon>
-                  </template>
-                  {{ t('prevMail') }}
-                </n-button>
-              </n-space>
-              <n-button @click="nextMail" :disabled="!canGoNextMail" text size="small" icon-placement="right">
-                <template #icon>
-                  <n-icon>
-                    <ArrowForwardIosFilled />
-                  </n-icon>
-                </template>
-                {{ t('nextMail') }}
-              </n-button>
-            </n-flex>
-          </div>
-          <n-card :bordered="false" embedded v-if="curMail" class="mail-item" :title="curMail.subject"
-            style="overflow: auto; max-height: 100vh;">
-            <MailContentRenderer :mail="curMail" :showEMailTo="showEMailTo"
-              :enableUserDeleteEmail="enableUserDeleteEmail" :showReply="showReply" :showSaveS3="showSaveS3"
-              :onDelete="deleteMail" :onReply="replyMail" :onForward="forwardMail" :onSaveToS3="saveToS3Proxy" />
-          </n-card>
-          <n-card :bordered="false" embedded class="mail-item" v-else>
-            <n-result status="info" :title="count === 0 ? t('emptyInbox') : t('pleaseSelectMail')">
-              <template #icon>
-                <n-icon :component="InboxRound" :size="100" />
-              </template>
-            </n-result>
-          </n-card>
-        </template>
-      </n-split>
-      <div v-else class="mail-list-scroll">
-        <n-list hoverable clickable>
-          <n-list-item v-for="row in data" v-bind:key="row.id" @click="() => clickRow(row)"
-            :class="mailItemClass(row)">
-            <template #prefix v-if="multiActionMode">
-              <n-checkbox v-model:checked="row.checked" />
-            </template>
-            <n-thing class="mail-list-thing">
-              <template #header>
-                <n-ellipsis class="mail-list-title">
-                  {{ row.subject }}
-                </n-ellipsis>
-              </template>
-              <template #description>
-                <div class="mail-list-meta">
-                  <n-tag type="info">
-                    ID: {{ row.id }}
-                  </n-tag>
-                  <n-tag type="info">
-                    {{ utcToLocalDate(row.created_at, useUTCDate) }}
-                  </n-tag>
-                  <n-tag type="info">
-                    <n-ellipsis class="mail-list-meta-text">
-                      {{ showEMailTo ? "FROM: " + row.source : row.source }}
-                    </n-ellipsis>
-                  </n-tag>
-                  <n-tag v-if="showEMailTo" type="info">
-                    <n-ellipsis class="mail-list-meta-text">
-                      TO: {{ row.address }}
-                    </n-ellipsis>
-                  </n-tag>
-                  <AiExtractInfo :metadata="row.metadata" compact />
-                </div>
-              </template>
-              <n-ellipsis v-if="row.text && mailListPreviewLineClampValue > 0"
-                :line-clamp="mailListPreviewLineClampValue" class="mail-list-preview" :tooltip="false">
-                {{ row.text }}
-              </n-ellipsis>
-            </n-thing>
-          </n-list-item>
-        </n-list>
-      </div>
-    </div>
-    <div class="left" v-else>
-      <n-space justify="space-around" align="center" :wrap="false" style="display: flex; align-items: center;">
-        <n-pagination v-model:page="page" v-model:page-size="pageSize" :item-count="count" simple size="small" />
-        <n-switch v-model:value="autoRefresh" size="small" :round="false">
-          <template #checked>
-            {{ t('refreshAfter', { msg: autoRefreshInterval }) }}
-          </template>
-          <template #unchecked>
-            {{ t('autoRefresh') }}
-          </template>
-        </n-switch>
-        <n-button @click="backFirstPageAndRefresh" tertiary size="small" type="primary">
-          {{ t('refresh') }}
-        </n-button>
-      </n-space>
-      <div v-if="showFilterInput" style="padding: 0 10px; margin-top: 8px; margin-bottom: 10px;">
-        <n-input v-model:value="localFilterKeyword"
-          :placeholder="t('keywordQueryTip')" size="small" clearable />
-      </div>
-      <div style="overflow: auto; min-height: 60vh; max-height: 100vh;">
-        <n-list hoverable clickable>
-          <n-list-item v-for="row in data" v-bind:key="row.id" @click="() => clickRow(row)">
-            <n-thing :title="row.subject">
-              <template #description>
-                <n-tag type="info">
-                  ID: {{ row.id }}
-                </n-tag>
-                <n-tag type="info">
-                  {{ utcToLocalDate(row.created_at, useUTCDate) }}
-                </n-tag>
-                <n-tag type="info">
-                  <n-ellipsis style="max-width: 240px;">
-                    {{ showEMailTo ? "FROM: " + row.source : row.source }}
-                  </n-ellipsis>
-                </n-tag>
-                <n-tag v-if="showEMailTo" type="info">
-                  <n-ellipsis style="max-width: 240px;">
-                    TO: {{ row.address }}
-                  </n-ellipsis>
-                </n-tag>
-                <AiExtractInfo :metadata="row.metadata" compact />
-              </template>
-            </n-thing>
-          </n-list-item>
-        </n-list>
-      </div>
-      <n-drawer v-model:show="curMail" width="100%" placement="bottom" :trap-focus="false" :block-scroll="false"
-        style="height: 80vh;">
-        <n-drawer-content :title="curMail ? curMail.subject : ''" closable>
-          <n-card :bordered="false" embedded style="overflow: auto;">
-            <MailContentRenderer :mail="curMail" :showEMailTo="showEMailTo"
-              :enableUserDeleteEmail="enableUserDeleteEmail" :showReply="showReply" :showSaveS3="showSaveS3"
-              :useUTCDate="useUTCDate" :onDelete="deleteMail" :onReply="replyMail" :onForward="forwardMail"
-              :onSaveToS3="saveToS3Proxy" />
-          </n-card>
-        </n-drawer-content>
-      </n-drawer>
-    </div>
-    <n-modal v-model:show="showMultiActionDownload" preset="dialog" :title="t('downloadMail')">
-      <n-tag type="info">
-        {{ multiActionDownloadZip.filename }}
-      </n-tag>
-      <n-button tag="a" target="_blank" tertiary type="info" size="small" :download="multiActionDownloadZip.filename"
-        :href="multiActionDownloadZip.url">
-        <n-icon :component="CloudDownloadRound" />
-        {{ t('downloadMail') + " zip" }}
-      </n-button>
-    </n-modal>
-    <n-modal v-model:show="showMultiActionDelete" preset="dialog" :title="t('delete') + t('success')"
-      negative-text="OK">
-      <n-space justify="center">
-        <n-progress type="circle" status="error" :percentage="multiActionDeleteProgress.percentage">
-          <span style="text-align: center">
-            {{ multiActionDeleteProgress.tip }}
+
+      <!-- Left: Normal actions -->
+      <div v-else class="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" @click="multiActionModeClick(true)" class="border-zinc-800 bg-zinc-950">
+          {{ t('multiAction') }}
+        </Button>
+
+        <!-- Custom Pagination -->
+        <div class="flex items-center gap-2 text-xs">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            :disabled="page <= 1" 
+            @click="page--"
+            class="h-8 w-8 border-zinc-800 bg-zinc-950"
+          >
+            <ArrowLeft class="h-4.5 w-4.5" />
+          </Button>
+          <span class="text-zinc-400 font-medium px-1">{{ page }} / {{ totalPages }}</span>
+          <Button 
+            size="icon" 
+            variant="outline" 
+            :disabled="page >= totalPages" 
+            @click="page++"
+            class="h-8 w-8 border-zinc-800 bg-zinc-950"
+          >
+            <ArrowRight class="h-4.5 w-4.5" />
+          </Button>
+
+          <!-- Page size selector -->
+          <Select :model-value="String(pageSize)" @update:modelValue="(val) => pageSize = Number(val)">
+            <SelectTrigger class="h-8 w-[76px] bg-zinc-950 border-zinc-800">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent class="bg-zinc-900 border-zinc-800 text-zinc-300">
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <!-- Auto refresh control -->
+        <div class="flex items-center gap-2 border border-zinc-800 bg-zinc-950 rounded-lg px-3 py-1 text-xs">
+          <span class="text-zinc-400 font-medium select-none">
+            {{ autoRefresh ? t('refreshAfter', { msg: autoRefreshInterval }) : t('autoRefresh') }}
           </span>
-        </n-progress>
-      </n-space>
-    </n-modal>
+          <Switch 
+            :checked="autoRefresh" 
+            @update:checked="(val) => autoRefresh.value = val" 
+            class="scale-90"
+          />
+        </div>
+
+        <Button size="sm" @click="backFirstPageAndRefresh" class="gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+          <span>{{ t('refresh') }}</span>
+        </Button>
+      </div>
+
+      <!-- Right: Search Input -->
+      <div v-if="showFilterInput" class="relative w-full sm:w-48">
+        <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+        <Input 
+          v-model="localFilterKeyword" 
+          :placeholder="t('keywordQueryTip')" 
+          class="h-8 pl-8 border-zinc-800 bg-zinc-950 text-white placeholder-zinc-500 text-xs" 
+        />
+      </div>
+    </div>
+
+    <!-- Main View layout -->
+    <div v-if="!isMobile">
+      <!-- Desktop View (Split Screen) -->
+      <div class="grid grid-cols-12 border border-zinc-800 rounded-xl bg-card overflow-hidden min-h-[60vh] max-h-[75vh]">
+        <!-- Left: Mail List (4 columns) -->
+        <div role="list" class="col-span-4 border-r border-zinc-800 flex flex-col overflow-y-auto divide-y divide-zinc-800 bg-zinc-950/20">
+          <div v-if="data.length === 0" class="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
+            <Inbox class="h-10 w-10 text-zinc-700" />
+            <span class="text-xs">{{ t('emptyInbox') }}</span>
+          </div>
+
+          <div 
+            v-else
+            v-for="row in data" 
+            :key="row.id" 
+            role="listitem"
+            @click="clickRow(row)"
+            class="p-4 cursor-pointer text-left transition-colors relative flex items-start gap-3 border-l-2"
+            :class="[
+              curMail?.id === row.id ? 'bg-zinc-800/40 border-emerald-500' : 'hover:bg-zinc-900/40 border-transparent',
+              !row.isRead ? 'font-semibold' : ''
+            ]"
+          >
+            <!-- Multi-action checkbox -->
+            <div v-if="multiActionMode" @click.stop class="pt-0.5 shrink-0">
+              <Checkbox :checked="row.checked" @update:checked="(val) => row.checked = val" />
+            </div>
+
+            <!-- Content preview summary -->
+            <div class="space-y-1.5 flex-1 min-w-0">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-zinc-300 font-semibold truncate">{{ showEMailTo ? "FROM: " + row.source : row.source }}</span>
+                <span class="text-zinc-500 text-[10px] shrink-0 font-mono">{{ utcToLocalDate(row.created_at, useUTCDate) }}</span>
+              </div>
+              
+              <h5 class="text-xs text-white truncate">{{ row.subject }}</h5>
+              
+              <div v-if="showEMailTo" class="text-[10px] text-zinc-500 truncate">
+                TO: {{ row.address }}
+              </div>
+              
+              <!-- AI Extraction mini Badge -->
+              <AiExtractInfo :metadata="row.metadata" compact />
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Active Email display (8 columns) -->
+        <div class="col-span-8 flex flex-col overflow-y-auto bg-zinc-950/10 p-6 min-h-[60vh]">
+          <div v-if="curMail" class="space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <div class="flex gap-2">
+                <Button size="xs" variant="ghost" :disabled="!canGoPrevMail" @click="prevMail" class="text-zinc-400 hover:text-white">
+                  <ArrowLeft class="h-4 w-4 mr-1" /> {{ t('prevMail') }}
+                </Button>
+                <Button size="xs" variant="ghost" :disabled="!canGoNextMail" @click="nextMail" class="text-zinc-400 hover:text-white">
+                  {{ t('nextMail') }} <ArrowRight class="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+
+            <MailContentRenderer 
+              :mail="curMail" 
+              :showEMailTo="showEMailTo"
+              :enableUserDeleteEmail="enableUserDeleteEmail" 
+              :showReply="showReply" 
+              :showSaveS3="showSaveS3"
+              :onDelete="deleteMail" 
+              :onReply="replyMail" 
+              :onForward="forwardMail" 
+              :onSaveToS3="saveToS3Proxy" 
+            />
+          </div>
+
+          <div v-else class="flex-1 flex flex-col items-center justify-center text-zinc-500 gap-3 py-16">
+            <Inbox class="h-12 w-12 text-zinc-700" />
+            <h5 class="text-sm font-semibold text-zinc-350">{{ count === 0 ? t('emptyInbox') : t('pleaseSelectMail') }}</h5>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile View (Full Screen Toggle or Sheet Drawer) -->
+    <div v-else class="space-y-2">
+      <!-- List for mobile -->
+      <div role="list" class="border border-zinc-800 rounded-xl bg-card overflow-hidden divide-y divide-zinc-800">
+        <div v-if="data.length === 0" class="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
+          <Inbox class="h-10 w-10 text-zinc-700" />
+          <span class="text-xs">{{ t('emptyInbox') }}</span>
+        </div>
+
+        <div 
+          v-else
+          v-for="row in data" 
+          :key="row.id" 
+          role="listitem"
+          @click="clickRow(row)"
+          class="p-4 cursor-pointer text-left transition-colors flex items-start justify-between gap-3 hover:bg-zinc-900/20"
+        >
+          <div class="space-y-1 min-w-0 flex-1">
+            <h5 class="text-xs text-white font-semibold truncate">{{ row.subject }}</h5>
+            <p class="text-[11px] text-zinc-400 truncate">{{ showEMailTo ? "FROM: " + row.source : row.source }}</p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[10px] text-zinc-500">
+              <span class="font-mono">ID: {{ row.id }}</span>
+              <span>•</span>
+              <span>{{ utcToLocalDate(row.created_at, useUTCDate) }}</span>
+            </div>
+            <AiExtractInfo :metadata="row.metadata" compact />
+          </div>
+          <ChevronRight class="h-4 w-4 text-zinc-600 shrink-0 self-center" />
+        </div>
+      </div>
+
+      <!-- Mobile Mail Detail Sheet -->
+      <Sheet :open="!!curMail" @update:open="(val) => { if (!val) curMail = null }">
+        <SheetContent side="bottom" class="h-[85vh] bg-zinc-950 border-zinc-850 text-white p-4 overflow-y-auto rounded-t-2xl">
+          <SheetHeader class="text-left border-b border-zinc-800 pb-3 mb-4">
+            <SheetTitle class="text-white text-sm truncate pr-6">{{ curMail ? curMail.subject : '' }}</SheetTitle>
+          </SheetHeader>
+          
+          <MailContentRenderer 
+            v-if="curMail"
+            :mail="curMail" 
+            :showEMailTo="showEMailTo"
+            :enableUserDeleteEmail="enableUserDeleteEmail" 
+            :showReply="showReply" 
+            :showSaveS3="showSaveS3"
+            :useUTCDate="useUTCDate" 
+            :onDelete="deleteMail" 
+            :onReply="replyMail" 
+            :onForward="forwardMail"
+            :onSaveToS3="saveToS3Proxy" 
+          />
+        </SheetContent>
+      </Sheet>
+    </div>
+
+    <!-- Zip Download Modal -->
+    <Dialog v-model:open="showMultiActionDownload">
+      <DialogContent class="sm:max-w-md border-zinc-800 bg-zinc-950 text-white">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-bold text-white">{{ t('downloadMail') }}</DialogTitle>
+          <DialogDescription class="text-xs text-zinc-400">
+            Click download to fetch the generated ZIP archive of your selected emails.
+          </DialogDescription>
+        </DialogHeader>
+        <div class="py-4 space-y-3">
+          <div class="bg-zinc-900 border border-zinc-800 px-3 py-2 rounded-lg text-xs font-mono text-zinc-300">
+            {{ multiActionDownloadZip.filename }}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button as-child class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold w-full">
+            <a 
+              :href="multiActionDownloadZip.url" 
+              :download="multiActionDownloadZip.filename"
+              target="_blank"
+            >
+              <Download class="h-4 w-4 mr-1.5 inline" />
+              {{ t('downloadMail') }} ZIP
+            </a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Progress Modal -->
+    <Dialog v-model:open="showMultiActionDelete">
+      <DialogContent class="sm:max-w-sm border-zinc-800 bg-zinc-950 text-white" :closable="false">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-bold text-white">{{ t('delete') }} progress</DialogTitle>
+        </DialogHeader>
+        <div class="py-6 flex flex-col items-center justify-center gap-4">
+          <div class="relative flex items-center justify-center">
+            <!-- Progress Spinner -->
+            <Loader2 class="h-16 w-16 animate-spin text-red-500" />
+            <span class="absolute text-xs font-bold text-zinc-300">{{ multiActionDeleteProgress.percentage }}%</span>
+          </div>
+          <span class="text-xs text-zinc-400">{{ multiActionDeleteProgress.tip }}</span>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <style scoped>
-.left {
-  text-align: left;
-}
-
-.center {
-  text-align: center;
-}
-
-.overlay {
-  width: 100%;
-  height: 100%;
-  z-index: 1000;
-}
-
-.overlay-dark-backgroud {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.overlay-light-backgroud {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.mail-item {
-  height: 100%;
-}
-
-.mail-list-scroll {
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 60vh;
-  max-height: 100vh;
-}
-
-.mail-list-thing,
-.mail-list-title,
-.mail-list-preview {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.mail-list-thing,
-.mail-list-preview {
-  width: 100%;
-}
-
-.mail-list-thing :deep(.n-thing-main),
-.mail-list-thing :deep(.n-thing-header),
-.mail-list-thing :deep(.n-thing-header__title),
-.mail-list-thing :deep(.n-thing-main__description),
-.mail-list-thing :deep(.n-thing-main__content) {
-  min-width: 0;
-}
-
-.mail-list-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.mail-list-meta :deep(.n-tag) {
-  max-width: 100%;
-}
-
-.mail-list-meta-text {
-  max-width: min(240px, 100%);
-}
-
-.mail-list-preview {
-  display: -webkit-box;
-  overflow-wrap: anywhere;
-  opacity: 0.7;
-}
-
-.mail-list-scroll :deep(.n-list-item__main) {
-  min-width: 0;
-}
-
-pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.split-handle {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.split-handle__grip {
-  width: 4px;
-  height: 32px;
-  border-radius: 2px;
-  background-color: var(--n-resize-trigger-color);
-  transition: background-color 0.2s;
-}
-
-.split-handle:hover .split-handle__grip {
-  background-color: var(--n-resize-trigger-color-hover);
-}
+/* Scoped adjustments */
 </style>

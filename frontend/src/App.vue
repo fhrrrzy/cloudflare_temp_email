@@ -1,8 +1,5 @@
 <script setup>
-import {
-  darkTheme,
-} from 'naive-ui'
-import { computed, onMounted, watchEffect } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watchEffect } from 'vue'
 import { useScript } from '@unhead/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -11,8 +8,9 @@ import { useIsMobile } from './utils/composables'
 import Header from './views/Header.vue';
 import Footer from './views/Footer.vue';
 import { api } from './api'
-import { getNaiveLocaleConfig } from './i18n/naive-locale'
 import { DEFAULT_LOCALE, isSupportedLocale } from './i18n/utils'
+import { Loader2, ChevronUp } from 'lucide-vue-next'
+import { Toaster } from '@/components/ui/sonner'
 
 const route = useRoute()
 // Conditional layout check
@@ -26,12 +24,9 @@ const {
 const adClient = import.meta.env.VITE_GOOGLE_AD_CLIENT;
 const adSlot = import.meta.env.VITE_GOOGLE_AD_SLOT;
 const { locale } = useI18n({ useScope: 'global' });
-const theme = computed(() => isDark.value ? darkTheme : null)
-const localeConfig = computed(() => getNaiveLocaleConfig(isSupportedLocale(locale.value) ? locale.value : DEFAULT_LOCALE))
 const isMobile = useIsMobile()
 const showSideMargin = computed(() => !isMobile.value && useSideMargin.value);
 const showAd = computed(() => !isMobile.value && adClient && adSlot);
-const gridMaxCols = computed(() => showAd.value ? 8 : 12);
 
 watchEffect(() => {
   if (typeof document === 'undefined') return
@@ -47,7 +42,15 @@ if (showAd.value) {
   })
 }
 
+// Back to top logic
+const showBackToTop = ref(false)
+const handleScroll = () => {
+  showBackToTop.value = window.scrollY > 300
+}
+
 onMounted(async () => {
+  window.addEventListener('scroll', handleScroll)
+  
   try {
     await api.getUserSettings();
   } catch (error) {
@@ -89,6 +92,14 @@ onMounted(async () => {
     isTelegram.value = !!window.Telegram?.WebApp?.initData;
   }
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <template>
@@ -96,80 +107,67 @@ onMounted(async () => {
     <router-view></router-view>
   </template>
   <template v-else>
-    <n-config-provider :locale="localeConfig.locale" :date-locale="localeConfig.dateLocale" :theme="theme">
-      <n-global-style />
-      <n-spin description="loading..." :show="loading">
-        <n-notification-provider container-style="margin-top: 60px;">
-          <n-message-provider container-style="margin-top: 20px;">
-            <n-grid x-gap="12" :cols="gridMaxCols">
-              <n-gi v-if="showSideMargin" span="1">
-                <div class="side" v-if="showAd">
-                  <ins class="adsbygoogle" style="display:block" :data-ad-client="adClient" :data-ad-slot="adSlot"
-                    data-ad-format="auto" data-full-width-responsive="true"></ins>
-                </div>
-              </n-gi>
-              <n-gi :span="!showSideMargin ? gridMaxCols : (gridMaxCols - 2)">
-                <div class="main">
-                  <n-space vertical>
-                    <n-layout style="min-height: 80vh;">
-                      <Header />
-                      <router-view></router-view>
-                    </n-layout>
-                    <Footer />
-                  </n-space>
-                </div>
-              </n-gi>
-              <n-gi v-if="showSideMargin" span="1">
-                <div class="side" v-if="showAd">
-                  <ins class="adsbygoogle" style="display:block" :data-ad-client="adClient" :data-ad-slot="adSlot"
-                    data-ad-format="auto" data-full-width-responsive="true"></ins>
-                </div>
-              </n-gi>
-            </n-grid>
-            <n-back-top />
-          </n-message-provider>
-        </n-notification-provider>
-      </n-spin>
-    </n-config-provider>
+    <div class="relative min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
+      <!-- Loading spinner overlay -->
+      <div v-if="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 backdrop-blur-sm">
+        <div class="flex flex-col items-center gap-2">
+          <Loader2 class="h-8 w-8 animate-spin text-emerald-500" />
+          <span class="text-xs text-zinc-400 font-medium">loading...</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1">
+        <!-- Left Ad -->
+        <div v-if="showSideMargin && showAd" class="col-span-2 hidden md:block">
+          <div class="sticky top-4">
+            <ins class="adsbygoogle" style="display:block" :data-ad-client="adClient" :data-ad-slot="adSlot"
+              data-ad-format="auto" data-full-width-responsive="true"></ins>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div :class="[
+          showSideMargin && showAd ? 'col-span-12 md:col-span-8' : 
+          showSideMargin ? 'col-span-12 md:col-span-10 md:col-start-2' : 
+          'col-span-12'
+        ]" class="flex flex-col min-h-[85vh]">
+          <Header />
+          <main class="flex-1 py-4">
+            <router-view></router-view>
+          </main>
+          <Footer />
+        </div>
+
+        <!-- Right Ad -->
+        <div v-if="showSideMargin && showAd" class="col-span-2 hidden md:block">
+          <div class="sticky top-4">
+            <ins class="adsbygoogle" style="display:block" :data-ad-client="adClient" :data-ad-slot="adSlot"
+              data-ad-format="auto" data-full-width-responsive="true"></ins>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back to top button -->
+      <button 
+        v-if="showBackToTop" 
+        @click="scrollToTop" 
+        class="fixed bottom-6 right-6 z-40 p-2.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 shadow-lg cursor-pointer transition-all duration-200"
+        aria-label="Back to top"
+      >
+        <ChevronUp class="h-5 w-5" />
+      </button>
+
+      <!-- Sonner Toaster -->
+      <Toaster richColors />
+    </div>
   </template>
 </template>
 
 <style>
-.n-switch {
-  margin-left: 10px;
-  margin-right: 10px;
-}
-
+/* Global CSS adjustments */
 @media (hover: none) and (pointer: coarse) and (max-width: 1024px) {
   :where(input, textarea, select, [contenteditable="true"]) {
     font-size: 16px !important;
   }
-
-  :where(.n-input, .n-input-number, .n-base-selection, .n-input-group-label) {
-    --n-font-size: 16px !important;
-  }
-}
-</style>
-
-<style scoped>
-.side {
-  height: 100vh;
-}
-
-.main {
-  height: 100vh;
-  text-align: center;
-}
-
-.n-grid {
-  height: 100%;
-}
-
-.n-gi {
-  height: 100%;
-}
-
-.n-space {
-  height: 100%;
 }
 </style>

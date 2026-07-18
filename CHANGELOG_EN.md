@@ -22,6 +22,7 @@
 
 ### Improvements
 
+- refactor: |Frontend| Remove naive-ui and @vicons dependencies, completely refactoring frontend components and sub-views to Shadcn Vue and custom Tailwind CSS, reducing bundle sizes and improving system-wide dark mode and mobile responsiveness
 - feat: |Frontend| Lower the "Left list width in two-column mailbox view" minimum from 0.25 to 0 so the left list pane can fully collapse for a near-fullscreen content view, with a 0 mark added; applies to both the inbox and send-box two-pane splits, and clarifies the Appearance setting label so it is clear the value controls the left mail list width
 
 ## v1.9.0

@@ -5,6 +5,7 @@ import axios from 'axios'
 import i18n from '../i18n'
 import { getFingerprint } from '../utils/fingerprint'
 import { safeBearerHeader, safeHeaderValue } from '../utils/headers'
+import { toast } from 'vue-sonner'
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const {
@@ -70,13 +71,13 @@ const apiFetch = async (path, options = {}) => {
     }
 }
 
-const getOpenSettings = async (message, notification) => {
+const getOpenSettings = async () => {
     try {
         const res = await api.fetch("/open_api/settings");
         const domains = Array.isArray(res["domains"]) ? res["domains"] : [];
         const domainLabels = res["domainLabels"] || [];
         if (domains.length < 1) {
-            message.error("No domains found, please check your worker settings");
+            toast.error("No domains found, please check your worker settings");
         }
         Object.assign(openSettings.value, {
             ...res,
@@ -120,16 +121,14 @@ const getOpenSettings = async (message, notification) => {
                 || openSettings.value.alwaysShowAnnouncement)
         ) {
             announcement.value = openSettings.value.announcement;
-            notification.info({
-                content: () => {
-                    return h("div", {
-                        innerHTML: announcement.value
-                    });
-                }
+            toast(h("div", {
+                innerHTML: announcement.value
+            }), {
+                duration: 8000,
             });
         }
     } catch (error) {
-        message.error(error.message || "error");
+        toast.error(error.message || "error");
     } finally {
         openSettings.value.fetched = true;
     }
@@ -152,18 +151,18 @@ const getSettings = async () => {
 }
 
 
-const getUserOpenSettings = async (message) => {
+const getUserOpenSettings = async () => {
     try {
         const res = await api.fetch(`/user_api/open_settings`);
         Object.assign(userOpenSettings.value, res);
     } catch (error) {
-        message.error(error.message || "fetch settings failed");
+        toast.error(error.message || "fetch settings failed");
     } finally {
         userOpenSettings.value.fetched = true;
     }
 }
 
-const getUserSettings = async (message) => {
+const getUserSettings = async () => {
     try {
         if (!userJwt.value) return;
         const res = await api.fetch("/user_api/settings")
@@ -182,7 +181,7 @@ const getUserSettings = async (message) => {
             }
         }
     } catch (error) {
-        message?.error(error.message || "error");
+        toast.error(error.message || "error");
     } finally {
         userSettings.value.fetched = true;
     }

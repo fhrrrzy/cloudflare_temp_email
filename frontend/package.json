@@ -41,7 +41,6 @@
     "jszip": "^3.10.1",
     "lucide-vue-next": "^1.0.0",
     "mail-parser-wasm": "^0.2.2",
-    "naive-ui": "^2.44.1",
     "postal-mime": "^2.7.4",
     "primeicons": "^8.0.0",
     "primevue": "^3.53.1",
@@ -59,8 +58,6 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "@vicons/fa": "^0.13.0",
-    "@vicons/material": "^0.13.0",
     "@vitejs/plugin-vue": "^6.0.7",
     "autoprefixer": "^10.5.4",
     "jsdom": "^28.1.0",

@@ -1,13 +1,23 @@
 <script setup>
 import { watch, onMounted, ref, computed } from "vue";
-import { useMessage } from 'naive-ui'
 import { useScopedI18n } from '@/i18n/app'
 import { useGlobalState } from '../store'
 import { useIsMobile } from '../utils/composables'
 import { utcToLocalDate } from '../utils';
-import { SendRound } from '@vicons/material'
+import { 
+  Send, Trash2, ArrowLeft, ArrowRight, RefreshCw, 
+  Code, Eye, EyeOff, ChevronRight, Inbox, Loader2 
+} from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 
-const message = useMessage()
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+
 const isMobile = useIsMobile()
 
 const props = defineProps({
@@ -61,21 +71,21 @@ const refresh = async () => {
     );
     data.value = results.map((item) => {
       try {
-        const data = JSON.parse(item.raw);
-        if (data.version == "v2") {
-          item.to_mail = data.to_name ? `${data.to_name} <${data.to_mail}>` : data.to_mail;
-          item.subject = data.subject;
-          item.is_html = data.is_html;
-          item.content = data.content;
-          item.raw = JSON.stringify(data, null, 2);
+        const dataJson = JSON.parse(item.raw);
+        if (dataJson.version == "v2") {
+          item.to_mail = dataJson.to_name ? `${dataJson.to_name} <${dataJson.to_mail}>` : dataJson.to_mail;
+          item.subject = dataJson.subject;
+          item.is_html = dataJson.is_html;
+          item.content = dataJson.content;
+          item.raw = JSON.stringify(dataJson, null, 2);
         } else {
-          item.to_mail = data?.personalizations?.map(
+          item.to_mail = dataJson?.personalizations?.map(
             (p) => p.to?.map((t) => t.email).join(',')
           ).join(';');
-          item.subject = data.subject;
-          item.is_html = (data.content[0]?.type != 'text/plain');
-          item.content = data.content[0]?.value;
-          item.raw = JSON.stringify(data, null, 2);
+          item.subject = dataJson.subject;
+          item.is_html = (dataJson.content[0]?.type != 'text/plain');
+          item.content = dataJson.content[0]?.value;
+          item.raw = JSON.stringify(dataJson, null, 2);
         }
       } catch (error) {
         console.log(error);
@@ -89,31 +99,28 @@ const refresh = async () => {
       curMail.value = data.value[0];
     }
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
     console.error(error);
   }
 };
 
 const clickRow = async (row) => {
+  if (multiActionMode.value) {
+    row.checked = !row.checked;
+    curMail.value = row;
+    return;
+  }
   curMail.value = row;
 };
-
-const mailItemClass = (row) => {
-  return curMail.value && row.id == curMail.value.id ? (isDark.value ? 'overlay overlay-dark-backgroud' : 'overlay overlay-light-backgroud') : '';
-};
-
-const onSpiltSizeChange = (size) => {
-  mailboxSplitSize.value = size;
-}
 
 const deleteMail = async () => {
   try {
     await props.deleteMail(curMail.value.id);
-    message.success(t("success"));
+    toast.success(t("success"));
     curMail.value = null;
     await refresh();
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
   }
 };
 
@@ -146,7 +153,7 @@ const multiActionDeleteMail = async () => {
     loading.value = true;
     const selectedMails = data.value.filter((item) => item.checked);
     if (selectedMails.length === 0) {
-      message.error(t('pleaseSelectMail'));
+      toast.error(t('pleaseSelectMail'));
       return;
     }
     multiActionDeleteProgress.value = {
@@ -161,15 +168,17 @@ const multiActionDeleteMail = async () => {
         tip: `${index + 1}/${selectedMails.length}`
       };
     }
-    message.success(t("success"));
+    toast.success(t("success"));
     await refresh();
   } catch (error) {
-    message.error(error.message || "error");
+    toast.error(error.message || "error");
   } finally {
     loading.value = false;
-    showMultiActionDelete.value = true;
+    showMultiActionDelete.value = false;
   }
 }
+
+const totalPages = computed(() => Math.ceil(count.value / pageSize.value) || 1)
 
 onMounted(async () => {
   await refresh();
@@ -177,230 +186,265 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <div v-if="!isMobile" class="left">
-      <div style="margin-bottom: 10px;">
-        <n-space v-if="multiActionMode">
-          <n-button @click="multiActionModeClick(false)" tertiary>
-            {{ t('cancelMultiAction') }}
-          </n-button>
-          <n-button @click="multiActionSelectAll(true)" tertiary>
-            {{ t('selectAll') }}
-          </n-button>
-          <n-button @click="multiActionSelectAll(false)" tertiary>
-            {{ t('unselectAll') }}
-          </n-button>
-          <n-popconfirm v-if="enableUserDeleteEmail" @positive-click="multiActionDeleteMail">
-            <template #trigger>
-              <n-button tertiary type="error">{{ t('delete') }}</n-button>
-            </template>
-            {{ t('deleteMailTip') }}
-          </n-popconfirm>
-        </n-space>
-        <n-space v-else>
-          <n-button v-if="showMultiActionMode" @click="multiActionModeClick(true)" type="primary" tertiary>
-            {{ t('multiAction') }}
-          </n-button>
-          <div style="display: inline-block; margin-right: 10px;">
-            <n-pagination v-model:page="page" v-model:page-size="pageSize" :item-count="count"
-              :page-sizes="[20, 50, 100]" show-size-picker />
-          </div>
-          <n-button @click="refresh" type="primary" tertiary>
-            {{ t('refresh') }}
-          </n-button>
-        </n-space>
+  <div class="space-y-4">
+    <!-- Action / Pagination Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/40 p-4 border border-zinc-800 rounded-xl">
+      <!-- Left: Bulk actions -->
+      <div v-if="multiActionMode" class="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" @click="multiActionModeClick(false)" class="border-zinc-800 bg-zinc-950">
+          {{ t('cancelMultiAction') }}
+        </Button>
+        <Button size="sm" variant="outline" @click="multiActionSelectAll(true)" class="border-zinc-800 bg-zinc-950">
+          {{ t('selectAll') }}
+        </Button>
+        <Button size="sm" variant="outline" @click="multiActionSelectAll(false)" class="border-zinc-800 bg-zinc-950">
+          {{ t('unselectAll') }}
+        </Button>
+        <Button 
+          v-if="enableUserDeleteEmail" 
+          size="sm" 
+          variant="destructive" 
+          @click="multiActionDeleteMail"
+          class="font-semibold"
+        >
+          {{ t('delete') }}
+        </Button>
       </div>
-      <n-split direction="horizontal" :max="0.75" :min="0" :resize-trigger-size="8"
-        :default-size="mailboxSplitSize" :on-update:size="onSpiltSizeChange">
-        <template #resize-trigger>
-          <div class="split-handle">
-            <div class="split-handle__grip" />
-          </div>
-        </template>
-        <template #1>
-          <div style="overflow: auto; min-height: 60vh; max-height: 100vh;">
-            <n-list hoverable clickable>
-              <n-list-item v-for="row in data" v-bind:key="row.id" @click="() => clickRow(row)"
-                :class="mailItemClass(row)">
-                <template #prefix v-if="multiActionMode">
-                  <n-checkbox v-model:checked="row.checked" />
-                </template>
-                <n-thing :title="row.subject">
-                  <template #description>
-                    <n-tag type="info">
-                      ID: {{ row.id }}
-                    </n-tag>
-                    <n-tag type="info">
-                      {{ utcToLocalDate(row.created_at, useUTCDate) }}
-                    </n-tag>
-                    <n-tag v-if="showEMailFrom" type="info">
-                      FROM: {{ row.address }}
-                    </n-tag>
-                    <n-tag type="info">
-                      TO: {{ row.to_mail }}
-                    </n-tag>
-                  </template>
-                </n-thing>
-              </n-list-item>
-            </n-list>
-          </div>
-        </template>
-        <template #2>
-          <n-card :bordered="false" embedded v-if="curMail" class="mail-item" :title="curMail.subject"
-            style="overflow: auto; max-height: 100vh;">
-            <n-space>
-              <n-tag type="info">
-                ID: {{ curMail.id }}
-              </n-tag>
-              <n-tag type="info">
-                {{ utcToLocalDate(curMail.created_at, useUTCDate) }}
-              </n-tag>
-              <n-tag type="info">
-                FROM: {{ curMail.address }}
-              </n-tag>
-              <n-tag type="info">
-                TO: {{ curMail.to_mail }}
-              </n-tag>
-              <n-button size="small" tertiary type="info" @click="showCode = !showCode">
-                {{ t('showCode') }}
-              </n-button>
-              <n-popconfirm v-if="enableUserDeleteEmail" @positive-click="deleteMail">
-                <template #trigger>
-                  <n-button tertiary type="error" size="small">{{ t('delete') }}</n-button>
-                </template>
-                {{ t('deleteMailTip') }}
-              </n-popconfirm>
-            </n-space>
-            <pre v-if="showCode" style="margin-top: 10px;">{{ curMail.raw }}</pre>
-            <pre v-else-if="!curMail.is_html" style="margin-top: 10px;">{{ curMail.content }}</pre>
-            <div v-else v-html="curMail.content" style="margin-top: 10px;"></div>
-          </n-card>
-          <n-card :bordered="false" embedded class="mail-item" v-else>
-            <n-result status="info" :title="count === 0 ? t('emptySent') : t('pleaseSelectMail')">
-              <template #icon>
-                <n-icon :component="SendRound" :size="100" />
-              </template>
-            </n-result>
-          </n-card>
-        </template>
-      </n-split>
-    </div>
-    <div class="left" v-else>
-      <div class="center">
-        <div style="display: inline-block; margin-right: 10px;">
-          <n-pagination v-model:page="page" v-model:page-size="pageSize" :item-count="count" simple size="small" />
+
+      <!-- Left: Normal actions -->
+      <div v-else class="flex flex-wrap items-center gap-2">
+        <Button v-if="showMultiActionMode" size="sm" variant="outline" @click="multiActionModeClick(true)" class="border-zinc-800 bg-zinc-950">
+          {{ t('multiAction') }}
+        </Button>
+
+        <!-- Custom Pagination -->
+        <div class="flex items-center gap-2 text-xs">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            :disabled="page <= 1" 
+            @click="page--"
+            class="h-8 w-8 border-zinc-800 bg-zinc-950"
+          >
+            <ArrowLeft class="h-4.5 w-4.5" />
+          </Button>
+          <span class="text-zinc-400 font-medium px-1">{{ page }} / {{ totalPages }}</span>
+          <Button 
+            size="icon" 
+            variant="outline" 
+            :disabled="page >= totalPages" 
+            @click="page++"
+            class="h-8 w-8 border-zinc-800 bg-zinc-950"
+          >
+            <ArrowRight class="h-4.5 w-4.5" />
+          </Button>
+
+          <!-- Page size selector -->
+          <Select :model-value="String(pageSize)" @update:modelValue="(val) => pageSize = Number(val)">
+            <SelectTrigger class="h-8 w-[76px] bg-zinc-950 border-zinc-800">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent class="bg-zinc-900 border-zinc-800 text-zinc-300">
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <n-button @click="refresh" size="small" type="primary">
-          {{ t('refresh') }}
-        </n-button>
+
+        <Button size="sm" @click="refresh" class="gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+          <span>{{ t('refresh') }}</span>
+        </Button>
       </div>
-      <div style="overflow: auto; min-height: 60vh; max-height: 100vh;">
-        <n-list hoverable clickable>
-          <n-list-item v-for="row in data" v-bind:key="row.id" @click="() => clickRow(row)">
-            <n-thing :title="row.subject">
-              <template #description>
-                <n-tag type="info">
-                  ID: {{ row.id }}
-                </n-tag>
-                <n-tag type="info">
-                  {{ utcToLocalDate(row.created_at, useUTCDate) }}
-                </n-tag>
-                <n-tag v-if="showEMailFrom" type="info">
-                  FROM: {{ row.address }}
-                </n-tag>
-                <n-tag type="info">
-                  TO: {{ row.to_mail }}
-                </n-tag>
-              </template>
-            </n-thing>
-          </n-list-item>
-        </n-list>
-      </div>
-      <n-drawer v-model:show="curMail" width="100%" placement="bottom" :trap-focus="false" :block-scroll="false"
-        style="height: 80vh;">
-        <n-drawer-content :title="curMail ? curMail.subject : ''" closable>
-          <n-card :bordered="false" embedded style="overflow: auto;">
-            <n-space>
-              <n-tag type="info">
-                ID: {{ curMail.id }}
-              </n-tag>
-              <n-tag type="info">
-                {{ utcToLocalDate(curMail.created_at, useUTCDate) }}
-              </n-tag>
-              <n-tag type="info">
-                FROM: {{ curMail.address }}
-              </n-tag>
-              <n-tag type="info">
-                TO: {{ curMail.to_mail }}
-              </n-tag>
-              <n-button size="small" tertiary type="info" @click="showCode = !showCode">
-                {{ t('showCode') }}
-              </n-button>
-              <n-popconfirm v-if="enableUserDeleteEmail" @positive-click="deleteMail">
-                <template #trigger>
-                  <n-button tertiary type="error" size="small">{{ t('delete') }}</n-button>
-                </template>
-                {{ t('deleteMailTip') }}
-              </n-popconfirm>
-            </n-space>
-            <pre v-if="showCode" style="margin-top: 10px;">{{ curMail.raw }}</pre>
-            <pre v-else-if="!curMail.is_html" style="margin-top: 10px;">{{ curMail.content }}</pre>
-            <div v-else v-html="curMail.content" style="margin-top: 10px;"></div>
-          </n-card>
-        </n-drawer-content>
-      </n-drawer>
     </div>
+
+    <!-- Main View layout -->
+    <div v-if="!isMobile">
+      <!-- Desktop View (Split Screen) -->
+      <div class="grid grid-cols-12 border border-zinc-800 rounded-xl bg-card overflow-hidden min-h-[60vh] max-h-[75vh]">
+        <!-- Left: Sent Mail List (4 columns) -->
+        <div role="list" class="col-span-4 border-r border-zinc-800 flex flex-col overflow-y-auto divide-y divide-zinc-800 bg-zinc-950/20">
+          <div v-if="data.length === 0" class="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
+            <Inbox class="h-10 w-10 text-zinc-700" />
+            <span class="text-xs">{{ t('emptySent') }}</span>
+          </div>
+
+          <div 
+            v-else
+            v-for="row in data" 
+            :key="row.id" 
+            role="listitem"
+            @click="clickRow(row)"
+            class="p-4 cursor-pointer text-left transition-colors relative flex items-start gap-3 border-l-2"
+            :class="curMail?.id === row.id ? 'bg-zinc-800/40 border-emerald-500' : 'hover:bg-zinc-900/40 border-transparent'"
+          >
+            <!-- Multi-action checkbox -->
+            <div v-if="multiActionMode" @click.stop class="pt-0.5 shrink-0">
+              <Checkbox :checked="row.checked" @update:checked="(val) => row.checked = val" />
+            </div>
+
+            <div class="space-y-1 flex-1 min-w-0">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-zinc-300 font-semibold truncate">TO: {{ row.to_mail }}</span>
+                <span class="text-zinc-500 text-[10px] shrink-0 font-mono">{{ utcToLocalDate(row.created_at, useUTCDate) }}</span>
+              </div>
+              <h5 class="text-xs text-white truncate">{{ row.subject }}</h5>
+              <div class="flex items-center gap-1.5 text-[10px] text-zinc-500">
+                <span class="font-mono">ID: {{ row.id }}</span>
+                <span v-if="showEMailFrom">•</span>
+                <span v-if="showEMailFrom" class="truncate">FROM: {{ row.address }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Active Email display (8 columns) -->
+        <div class="col-span-8 flex flex-col overflow-y-auto bg-zinc-950/10 p-6 min-h-[60vh] text-left">
+          <div v-if="curMail" class="space-y-4">
+            <!-- Headers and actions -->
+            <div class="border-b border-zinc-800 pb-4 space-y-4">
+              <h3 class="text-lg font-bold text-white">{{ curMail.subject }}</h3>
+              
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap gap-2">
+                  <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">ID: {{ curMail.id }}</Badge>
+                  <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">{{ utcToLocalDate(curMail.created_at, useUTCDate) }}</Badge>
+                  <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">FROM: {{ curMail.address }}</Badge>
+                  <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">TO: {{ curMail.to_mail }}</Badge>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <Button size="xs" variant="outline" @click="showCode = !showCode" class="border-zinc-800 text-zinc-300">
+                    <Code class="h-3.5 w-3.5 mr-1" />
+                    <span>{{ t('showCode') }}</span>
+                  </Button>
+                  
+                  <Button 
+                    v-if="enableUserDeleteEmail" 
+                    size="xs" 
+                    variant="destructive" 
+                    @click="deleteMail"
+                    class="font-semibold"
+                  >
+                    <Trash2 class="h-3.5 w-3.5 mr-1" />
+                    <span>{{ t('delete') }}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Email Body Content -->
+            <div class="pt-2">
+              <pre v-if="showCode" class="text-xs font-mono text-zinc-350 bg-zinc-950 p-4 rounded-lg border border-zinc-800 overflow-x-auto whitespace-pre-wrap">{{ curMail.raw }}</pre>
+              <pre v-else-if="!curMail.is_html" class="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{{ curMail.content }}</pre>
+              <div v-else class="bg-zinc-950 p-4 border border-zinc-850 rounded-lg overflow-x-auto">
+                <div v-html="curMail.content"></div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="flex-1 flex flex-col items-center justify-center text-zinc-500 gap-3 py-16">
+            <Inbox class="h-12 w-12 text-zinc-700" />
+            <h5 class="text-sm font-semibold text-zinc-350">{{ count === 0 ? t('emptySent') : t('pleaseSelectMail') }}</h5>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile View (Full Screen Toggle or Sheet Drawer) -->
+    <div v-else class="space-y-2">
+      <!-- List for mobile -->
+      <div role="list" class="border border-zinc-800 rounded-xl bg-card overflow-hidden divide-y divide-zinc-800">
+        <div v-if="data.length === 0" class="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
+          <Inbox class="h-10 w-10 text-zinc-700" />
+          <span class="text-xs">{{ t('emptySent') }}</span>
+        </div>
+
+        <div 
+          v-else
+          v-for="row in data" 
+          :key="row.id" 
+          role="listitem"
+          @click="clickRow(row)"
+          class="p-4 cursor-pointer text-left transition-colors flex items-start justify-between gap-3 hover:bg-zinc-900/20"
+        >
+          <div class="space-y-1 min-w-0 flex-1">
+            <h5 class="text-xs text-white font-semibold truncate">{{ row.subject }}</h5>
+            <p class="text-[11px] text-zinc-400 truncate">TO: {{ row.to_mail }}</p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-1 text-[10px] text-zinc-500">
+              <span class="font-mono">ID: {{ row.id }}</span>
+              <span>•</span>
+              <span>{{ utcToLocalDate(row.created_at, useUTCDate) }}</span>
+            </div>
+          </div>
+          <ChevronRight class="h-4 w-4 text-zinc-600 shrink-0 self-center" />
+        </div>
+      </div>
+
+      <!-- Mobile Mail Detail Sheet -->
+      <Sheet :open="!!curMail" @update:open="(val) => { if (!val) curMail = null }">
+        <SheetContent side="bottom" class="h-[85vh] bg-zinc-950 border-zinc-850 text-white p-4 overflow-y-auto rounded-t-2xl">
+          <SheetHeader class="text-left border-b border-zinc-800 pb-3 mb-4">
+            <SheetTitle class="text-white text-sm truncate pr-6">{{ curMail ? curMail.subject : '' }}</SheetTitle>
+          </SheetHeader>
+          
+          <div v-if="curMail" class="space-y-4 text-left">
+            <div class="flex flex-wrap gap-2">
+              <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">ID: {{ curMail.id }}</Badge>
+              <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">{{ utcToLocalDate(curMail.created_at, useUTCDate) }}</Badge>
+              <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">FROM: {{ curMail.address }}</Badge>
+              <Badge variant="outline" class="border-zinc-800 bg-zinc-900 text-zinc-350">TO: {{ curMail.to_mail }}</Badge>
+            </div>
+            
+            <div class="flex gap-2">
+              <Button size="xs" variant="outline" @click="showCode = !showCode" class="border-zinc-800 text-zinc-300">
+                <Code class="h-3.5 w-3.5 mr-1" />
+                <span>{{ t('showCode') }}</span>
+              </Button>
+              
+              <Button 
+                v-if="enableUserDeleteEmail" 
+                size="xs" 
+                variant="destructive" 
+                @click="deleteMail"
+                class="font-semibold"
+              >
+                <Trash2 class="h-3.5 w-3.5 mr-1" />
+                <span>{{ t('delete') }}</span>
+              </Button>
+            </div>
+
+            <div class="pt-2">
+              <pre v-if="showCode" class="text-xs font-mono text-zinc-350 bg-zinc-950 p-4 rounded-lg border border-zinc-800 overflow-x-auto whitespace-pre-wrap">{{ curMail.raw }}</pre>
+              <pre v-else-if="!curMail.is_html" class="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{{ curMail.content }}</pre>
+              <div v-else class="bg-zinc-950 p-4 border border-zinc-850 rounded-lg overflow-x-auto">
+                <div v-html="curMail.content"></div>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+
+    <!-- Delete Progress Modal -->
+    <Dialog v-model:open="showMultiActionDelete">
+      <DialogContent class="sm:max-w-sm border-zinc-800 bg-zinc-950 text-white" :closable="false">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-bold text-white">{{ t('delete') }} progress</DialogTitle>
+        </DialogHeader>
+        <div class="py-6 flex flex-col items-center justify-center gap-4">
+          <div class="relative flex items-center justify-center">
+            <Loader2 class="h-16 w-16 animate-spin text-red-500" />
+            <span class="absolute text-xs font-bold text-zinc-300">{{ multiActionDeleteProgress.percentage }}%</span>
+          </div>
+          <span class="text-xs text-zinc-400">{{ multiActionDeleteProgress.tip }}</span>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <style scoped>
-.left {
-  text-align: left;
-}
-
-.center {
-  text-align: center;
-}
-
-.overlay {
-  width: 100%;
-  height: 100%;
-  z-index: 1000;
-}
-
-.overlay-dark-backgroud {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.overlay-light-backgroud {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.mail-item {
-  height: 100%;
-}
-
-pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.split-handle {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.split-handle__grip {
-  width: 4px;
-  height: 32px;
-  border-radius: 2px;
-  background-color: var(--n-resize-trigger-color);
-  transition: background-color 0.2s;
-}
-
-.split-handle:hover .split-handle__grip {
-  background-color: var(--n-resize-trigger-color-hover);
-}
+/* Scoped adjustments */
 </style>

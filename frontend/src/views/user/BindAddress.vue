@@ -1,36 +1,22 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useScopedI18n } from '@/i18n/app'
-import { useRouter } from 'vue-router'
-
+import { onMounted } from 'vue'
 import { useGlobalState } from '../../store'
 import Login from '../common/Login.vue'
+import { Card, CardContent } from '@/components/ui/card'
 
-const { userJwt, userSettings, } = useGlobalState()
-
-const { t } = useScopedI18n('views.user.BindAddress')
-
-const fetchData = async () => {
-}
-
-onMounted(async () => {
-    await fetchData()
-})
+const { userSettings } = useGlobalState()
 </script>
 
 <template>
-    <div class="center" v-if="userSettings.user_email">
-        <n-card :bordered="false" embedded style="max-width: 600px;">
-            <Login />
-        </n-card>
-    </div>
+  <div class="flex justify-center w-full" v-if="userSettings.user_email">
+    <Card class="w-full max-w-xl border-zinc-800 bg-card text-left">
+      <CardContent class="p-6">
+        <Login />
+      </CardContent>
+    </Card>
+  </div>
 </template>
 
 <style scoped>
-.center {
-    display: flex;
-    text-align: center;
-    place-items: center;
-    justify-content: center;
-}
+/* No styles needed, pure Tailwind */
 </style>

@@ -1,37 +1,13 @@
 <script setup>
 import { computed } from 'vue';
 import { useScopedI18n } from '@/i18n/app';
-import { ContentCopyOutlined, LinkRound, CodeRound } from '@vicons/material';
-import { useMessage } from 'naive-ui';
+import { Copy, Link, Code, ExternalLink } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
 import { useGlobalState } from '../store';
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
-const message = useMessage();
 const { isDark } = useGlobalState();
-
-// Dark mode: use Gmail's softer blue (#A8C7FA) for better readability
-const alertThemeOverrides = computed(() => {
-  if (isDark.value) {
-    return {
-      colorSuccess: 'rgba(168, 199, 250, 0.15)',
-      borderSuccess: '1px solid rgba(168, 199, 250, 0.3)',
-      iconColorSuccess: '#A8C7FA',
-      titleTextColorSuccess: '#A8C7FA',
-    }
-  }
-  return {}
-});
-
-const tagThemeOverrides = computed(() => {
-  if (isDark.value) {
-    return {
-      colorSuccess: 'rgba(168, 199, 250, 0.15)',
-      borderSuccess: '1px solid rgba(168, 199, 250, 0.3)',
-      textColorSuccess: '#A8C7FA',
-    }
-  }
-  return {}
-});
-
 const { t } = useScopedI18n('components.AiExtractInfo')
 
 const props = defineProps({
@@ -69,14 +45,7 @@ const typeLabel = computed(() => {
 
 const typeIcon = computed(() => {
   if (!aiExtract.value) return null;
-  const iconMap = {
-    auth_code: CodeRound,
-    auth_link: LinkRound,
-    service_link: LinkRound,
-    subscription_link: LinkRound,
-    other_link: LinkRound,
-  };
-  return iconMap[aiExtract.value.type] || null;
+  return aiExtract.value.type === 'auth_code' ? Code : Link;
 });
 
 const isLink = computed(() => {
@@ -96,9 +65,9 @@ const displayText = computed(() => {
 const copyToClipboard = async () => {
   try {
     await navigator.clipboard.writeText(aiExtract.value.result);
-    message.success(t('copySuccess'));
+    toast.success(t('copySuccess'));
   } catch (e) {
-    message.error(t('copyFailed'));
+    toast.error(t('copyFailed'));
   }
 };
 
@@ -110,44 +79,65 @@ const openLink = () => {
 </script>
 
 <template>
-  <div v-if="aiExtract && aiExtract.result" class="ai-extract-info">
-    <n-alert v-if="!compact" type="success" closable :theme-overrides="alertThemeOverrides">
-      <template #icon>
-        <n-icon :component="typeIcon" />
-      </template>
-      <template #header>
-        {{ typeLabel }}
-      </template>
-      <n-space align="center">
-        <n-text v-if="aiExtract.type === 'auth_code'" strong style="font-size: 18px; font-family: monospace;">
+  <div v-if="aiExtract && aiExtract.result" class="mb-3">
+    <!-- Non-compact mode: Alert block -->
+    <div 
+      v-if="!compact" 
+      class="flex flex-col gap-3 rounded-lg border border-sky-500/20 bg-sky-950/20 p-4 text-sky-200"
+    >
+      <div class="flex items-center gap-2 font-semibold text-sm">
+        <component :is="typeIcon" class="h-4 w-4 text-sky-400" />
+        <span>{{ typeLabel }}</span>
+      </div>
+      
+      <div class="flex flex-wrap items-center gap-3">
+        <span 
+          v-if="aiExtract.type === 'auth_code'" 
+          class="text-lg font-mono font-bold tracking-wider text-emerald-400 select-all"
+        >
           {{ aiExtract.result }}
-        </n-text>
-        <n-ellipsis v-else style="max-width: 400px;">
+        </span>
+        <span v-else class="text-xs text-zinc-300 max-w-[320px] truncate">
           {{ displayText }}
-        </n-ellipsis>
-        <n-button size="small" @click="copyToClipboard" tertiary>
-          <template #icon>
-            <n-icon :component="ContentCopyOutlined" />
-          </template>
-        </n-button>
-        <n-button v-if="isLink" size="small" @click="openLink" tertiary type="primary">
-          {{ t('open') }}
-        </n-button>
-      </n-space>
-    </n-alert>
-    <n-tag v-else type="success" @click="copyToClipboard" style="cursor: pointer;" size="small" :theme-overrides="tagThemeOverrides">
-      <template #icon>
-        <n-icon :component="typeIcon" />
-      </template>
-      <n-ellipsis style="max-width: 150px;">
+        </span>
+        
+        <div class="flex items-center gap-2">
+          <Button 
+            size="xs" 
+            variant="outline" 
+            @click="copyToClipboard" 
+            class="h-7 w-7 p-0 border-sky-500/20 text-sky-400 hover:bg-sky-500/10"
+            title="Copy"
+          >
+            <Copy class="h-3.5 w-3.5" />
+          </Button>
+          
+          <Button 
+            v-if="isLink" 
+            size="xs" 
+            @click="openLink" 
+            class="h-7 bg-sky-500 hover:bg-sky-600 text-white font-medium"
+          >
+            {{ t('open') }}
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact mode: Badge -->
+    <div 
+      v-else 
+      @click="copyToClipboard" 
+      class="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-950/40 hover:bg-sky-950/60 px-3 py-1 text-xs text-sky-300 font-medium cursor-pointer transition-all active:scale-95 select-none"
+    >
+      <component :is="typeIcon" class="h-3.5 w-3.5 text-sky-400" />
+      <span class="max-w-[150px] truncate">
         {{ typeLabel }}: {{ displayText }}
-      </n-ellipsis>
-    </n-tag>
+      </span>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.ai-extract-info {
-  margin-bottom: 10px;
-}
+/* Scoped adjustments */
 </style>

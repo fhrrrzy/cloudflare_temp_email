@@ -1,8 +1,12 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useScopedI18n } from '@/i18n/app'
+import { ChevronDown, ExternalLink } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 
 import { useGlobalState } from '../store'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps({
   show: {
@@ -27,7 +31,6 @@ const emit = defineEmits(['update:show'])
 
 const { openSettings, auth } = useGlobalState()
 const { locale, t } = useScopedI18n('components.AddressCredentialModal')
-const message = useMessage()
 
 const modalShow = computed({
   get: () => props.show,
@@ -72,12 +75,21 @@ const smtpImapText = computed(() => [
   `${t('password')}: ${props.jwt}`,
 ].join('\n'))
 
+const openItems = ref([])
+const toggleItem = (name) => {
+  if (openItems.value.includes(name)) {
+    openItems.value = openItems.value.filter(item => item !== name)
+  } else {
+    openItems.value.push(name)
+  }
+}
+
 const copyText = async (text) => {
   if (!text) return
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text)
-      message.success(t('copySuccess'))
+      toast.success(t('copySuccess'))
       return
     }
 
@@ -90,233 +102,201 @@ const copyText = async (text) => {
       document.body.appendChild(textarea)
       textarea.select()
       if (document.execCommand('copy')) {
-        message.success(t('copySuccess'))
+        toast.success(t('copySuccess'))
         return
       }
-      message.error(t('copyFailed'))
+      toast.error(t('copyFailed'))
     } finally {
       textarea.parentNode?.removeChild(textarea)
     }
   } catch (error) {
     console.error(error)
-    message.error(t('copyFailed'))
+    toast.error(t('copyFailed'))
   }
 }
-
 </script>
 
 <template>
-  <n-modal v-model:show="modalShow" preset="card" :title="t('title')"
-    style="width: min(760px, calc(100vw - 32px));">
-    <n-alert type="info" :show-icon="false" :bordered="false">
-      {{ t('tip') }}
-    </n-alert>
-    <section class="credential-panel">
-      <h3 class="credential-title">{{ t('addressCredential') }}</h3>
-      <div class="credential-section">
-        <div class="credential-field" v-if="address">
-          <span class="credential-label">{{ t('currentAddress') }}</span>
-          <div class="credential-copy-row">
-            <code class="credential-code">{{ address }}</code>
-            <n-button size="tiny" tertiary type="primary" @click="copyText(address)">
-              {{ t('copySection') }}
-            </n-button>
+  <Dialog v-model:open="modalShow">
+    <DialogContent class="sm:max-w-2xl border-zinc-800 bg-zinc-950 text-white max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle class="text-lg font-bold text-white">{{ t('title') }}</DialogTitle>
+        <DialogDescription class="text-xs text-zinc-400">
+          {{ t('tip') }}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="space-y-6 my-4">
+        <!-- Credential Block -->
+        <section class="space-y-3">
+          <h4 class="text-sm font-semibold text-zinc-200">{{ t('addressCredential') }}</h4>
+          <div class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/20 p-4">
+            <div v-if="address" class="space-y-1">
+              <span class="text-xs font-semibold text-zinc-400">{{ t('currentAddress') }}</span>
+              <div class="flex items-center justify-between gap-3 bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
+                <code class="text-xs font-mono text-emerald-400 break-all select-all">{{ address }}</code>
+                <Button size="xs" variant="outline" class="h-7 text-[10px]" @click="copyText(address)">
+                  {{ t('copySection') }}
+                </Button>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-xs font-semibold text-zinc-400">{{ t('addressCredentialLabel') }}</span>
+              <div class="flex items-center justify-between gap-3 bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
+                <code class="text-xs font-mono text-zinc-300 break-all select-all">{{ jwt }}</code>
+                <Button size="xs" variant="outline" class="h-7 text-[10px]" @click="copyText(jwt)">
+                  {{ t('copySection') }}
+                </Button>
+              </div>
+            </div>
+
+            <div v-if="addressPassword" class="space-y-1">
+              <span class="text-xs font-semibold text-zinc-400">{{ t('addressPassword') }}</span>
+              <div class="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
+                <code class="text-xs font-mono text-zinc-300 break-all select-all">{{ addressPassword }}</code>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="credential-field">
-          <span class="credential-label">{{ t('addressCredentialLabel') }}</span>
-          <div class="credential-copy-row">
-            <code class="credential-code">{{ jwt }}</code>
-            <n-button size="tiny" tertiary type="primary" @click="copyText(jwt)">
-              {{ t('copySection') }}
-            </n-button>
+        </section>
+
+        <!-- Collapsible Guides -->
+        <div class="space-y-2 border-t border-zinc-800 pt-4">
+          <!-- Guide 1: Agent Access -->
+          <div v-if="showAgent" class="border border-zinc-850 rounded-xl overflow-hidden bg-zinc-900/10">
+            <button 
+              @click="toggleItem('agent')" 
+              class="w-full flex items-center justify-between p-4 text-left font-semibold text-sm hover:bg-zinc-900 transition-colors"
+            >
+              <span class="text-zinc-200 text-xs font-bold uppercase tracking-wider">{{ t('agentAccess') }}</span>
+              <div class="flex items-center gap-3">
+                <Button size="xs" variant="outline" class="h-6 text-[10px] px-2 bg-zinc-950" @click.stop="copyText(agentText)">
+                  {{ t('copySection') }}
+                </Button>
+                <ChevronDown class="h-4 w-4 text-zinc-400 transition-transform duration-200" :class="{ 'transform rotate-180': openItems.includes('agent') }" />
+              </div>
+            </button>
+            <div v-show="openItems.includes('agent')" class="p-4 bg-zinc-950/40 border-t border-zinc-850 space-y-4">
+              <p class="text-xs text-zinc-400 leading-relaxed">{{ t('agentAccessTip') }}</p>
+              
+              <div class="space-y-3">
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('apiBase') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ apiBaseUrl }}</code>
+                </div>
+                
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('agentSkill') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">
+                    <a :href="agentSkillUrl" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline flex items-center gap-1">
+                      {{ agentSkillUrl }} <ExternalLink class="h-3 w-3" />
+                    </a>
+                  </code>
+                </div>
+                
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('agentConfig') }}</span>
+                  <pre class="text-xs font-mono text-zinc-300 bg-zinc-950 p-3 rounded-lg border border-zinc-850 overflow-x-auto whitespace-pre-wrap">{{ agentConfigJson }}</pre>
+                </div>
+              </div>
+
+              <div class="flex justify-end">
+                <Button variant="link" size="sm" as-child class="text-emerald-400 hover:text-emerald-300 p-0 h-auto">
+                  <a :href="agentDocUrl" target="_blank" rel="noopener noreferrer" class="gap-1">
+                    {{ t('docs') }} <ExternalLink class="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="credential-field" v-if="addressPassword">
-          <span class="credential-label">{{ t('addressPassword') }}</span>
-          <code class="credential-code">{{ addressPassword }}</code>
+
+          <!-- Guide 2: SMTP / IMAP -->
+          <div v-if="showSmtpImap" class="border border-zinc-850 rounded-xl overflow-hidden bg-zinc-900/10">
+            <button 
+              @click="toggleItem('smtp-imap')" 
+              class="w-full flex items-center justify-between p-4 text-left font-semibold text-sm hover:bg-zinc-900 transition-colors"
+            >
+              <span class="text-zinc-200 text-xs font-bold uppercase tracking-wider">{{ t('smtpImapAccess') }}</span>
+              <div class="flex items-center gap-3">
+                <Button size="xs" variant="outline" class="h-6 text-[10px] px-2 bg-zinc-950" @click.stop="copyText(smtpImapText)">
+                  {{ t('copySection') }}
+                </Button>
+                <ChevronDown class="h-4 w-4 text-zinc-400 transition-transform duration-200" :class="{ 'transform rotate-180': openItems.includes('smtp-imap') }" />
+              </div>
+            </button>
+            <div v-show="openItems.includes('smtp-imap')" class="p-4 bg-zinc-950/40 border-t border-zinc-850 space-y-4">
+              <p class="text-xs text-zinc-400 leading-relaxed">{{ t('smtpImapTip') }}</p>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('smtpHost') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ smtpConfig.host || '-' }}</code>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('smtpPort') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ smtpConfig.port || 8025 }}</code>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('imapHost') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ imapConfig.host || '-' }}</code>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('imapPort') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ imapConfig.port || 11143 }}</code>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('security') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ securityLabel }}</code>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('username') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850">{{ address }}</code>
+                </div>
+                <div class="space-y-1">
+                  <span class="text-[11px] font-semibold text-zinc-500">{{ t('password') }}</span>
+                  <code class="block text-xs font-mono text-zinc-300 bg-zinc-950 p-2 rounded-lg border border-zinc-850 select-all break-all">{{ jwt }}</code>
+                </div>
+              </div>
+
+              <div class="flex justify-end">
+                <Button variant="link" size="sm" as-child class="text-emerald-400 hover:text-emerald-300 p-0 h-auto">
+                  <a :href="smtpImapDocUrl" target="_blank" rel="noopener noreferrer" class="gap-1">
+                    {{ t('docs') }} <ExternalLink class="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guide 3: Share Link -->
+          <div class="border border-zinc-850 rounded-xl overflow-hidden bg-zinc-900/10">
+            <button 
+              @click="toggleItem('share-link')" 
+              class="w-full flex items-center justify-between p-4 text-left font-semibold text-sm hover:bg-zinc-900 transition-colors"
+            >
+              <span class="text-zinc-200 text-xs font-bold uppercase tracking-wider">{{ t('autoLoginLink') }}</span>
+              <div class="flex items-center gap-3">
+                <Button size="xs" variant="outline" class="h-6 text-[10px] px-2 bg-zinc-950" @click.stop="copyText(autoLoginUrl)">
+                  {{ t('copySection') }}
+                </Button>
+                <ChevronDown class="h-4 w-4 text-zinc-400 transition-transform duration-200" :class="{ 'transform rotate-180': openItems.includes('share-link') }" />
+              </div>
+            </button>
+            <div v-show="openItems.includes('share-link')" class="p-4 bg-zinc-950/40 border-t border-zinc-850">
+              <code class="block text-xs font-mono text-emerald-400 bg-zinc-950 p-2.5 rounded-lg border border-zinc-850 break-all select-all">{{ autoLoginUrl }}</code>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
 
-    <n-collapse accordion class="credential-collapse">
-      <n-collapse-item v-if="showAgent" name="agent" :title="t('agentAccess')">
-        <template #header-extra>
-          <n-button size="tiny" tertiary type="primary" @click.stop="copyText(agentText)">
-            {{ t('copySection') }}
-          </n-button>
-        </template>
-        <div class="credential-section">
-          <p class="credential-tip">{{ t('agentAccessTip') }}</p>
-          <div class="credential-field">
-            <span class="credential-label">{{ t('apiBase') }}</span>
-            <code class="credential-code">{{ apiBaseUrl }}</code>
-          </div>
-          <div class="credential-field">
-            <span class="credential-label">{{ t('agentSkill') }}</span>
-            <code class="credential-code">
-              <a :href="agentSkillUrl" target="_blank" rel="noopener noreferrer">{{ agentSkillUrl }}</a>
-            </code>
-          </div>
-          <div class="credential-field">
-            <span class="credential-label">{{ t('agentConfig') }}</span>
-            <pre class="credential-code credential-code-block">{{ agentConfigJson }}</pre>
-          </div>
-          <div class="credential-actions">
-            <n-button tag="a" :href="agentDocUrl" target="_blank" rel="noopener noreferrer" text type="primary">
-              {{ t('docs') }}
-            </n-button>
-          </div>
-        </div>
-      </n-collapse-item>
-
-      <n-collapse-item v-if="showSmtpImap" name="smtp-imap" :title="t('smtpImapAccess')">
-        <template #header-extra>
-          <n-button size="tiny" tertiary type="primary" @click.stop="copyText(smtpImapText)">
-            {{ t('copySection') }}
-          </n-button>
-        </template>
-        <div class="credential-section">
-          <p class="credential-tip">{{ t('smtpImapTip') }}</p>
-          <div class="credential-grid">
-            <div class="credential-field">
-              <span class="credential-label">{{ t('smtpHost') }}</span>
-              <code class="credential-code">{{ smtpConfig.host || '-' }}</code>
-            </div>
-            <div class="credential-field">
-              <span class="credential-label">{{ t('smtpPort') }}</span>
-              <code class="credential-code">{{ smtpConfig.port || 8025 }}</code>
-            </div>
-            <div class="credential-field">
-              <span class="credential-label">{{ t('imapHost') }}</span>
-              <code class="credential-code">{{ imapConfig.host || '-' }}</code>
-            </div>
-            <div class="credential-field">
-              <span class="credential-label">{{ t('imapPort') }}</span>
-              <code class="credential-code">{{ imapConfig.port || 11143 }}</code>
-            </div>
-          </div>
-          <div class="credential-field">
-            <span class="credential-label">{{ t('security') }}</span>
-            <code class="credential-code">{{ securityLabel }}</code>
-          </div>
-          <div class="credential-field">
-            <span class="credential-label">{{ t('username') }}</span>
-            <code class="credential-code">{{ address }}</code>
-          </div>
-          <div class="credential-field">
-            <span class="credential-label">{{ t('password') }}</span>
-            <code class="credential-code">{{ jwt }}</code>
-          </div>
-          <div class="credential-actions">
-            <n-button tag="a" :href="smtpImapDocUrl" target="_blank" rel="noopener noreferrer" text type="primary">
-              {{ t('docs') }}
-            </n-button>
-          </div>
-        </div>
-      </n-collapse-item>
-
-      <n-collapse-item name="share-link" :title="t('autoLoginLink')">
-        <template #header-extra>
-          <n-button size="tiny" tertiary type="primary" @click.stop="copyText(autoLoginUrl)">
-            {{ t('copySection') }}
-          </n-button>
-        </template>
-        <div class="credential-section">
-          <div class="credential-field">
-            <code class="credential-code">{{ autoLoginUrl }}</code>
-          </div>
-        </div>
-      </n-collapse-item>
-    </n-collapse>
-  </n-modal>
+      <DialogFooter>
+        <Button @click="modalShow = false" class="bg-zinc-800 hover:bg-zinc-700 text-white font-semibold w-full sm:w-auto">
+          Close
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
-
-<style scoped>
-.credential-collapse {
-  margin-top: 14px;
-}
-
-.credential-panel {
-  display: grid;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.credential-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.credential-section {
-  display: grid;
-  gap: 12px;
-  text-align: left;
-}
-
-.credential-tip {
-  margin: 0;
-  color: var(--n-text-color-2);
-  line-height: 1.6;
-}
-
-.credential-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.credential-field {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.credential-label {
-  color: var(--n-text-color-2);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.credential-code {
-  display: block;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  border-radius: 6px;
-  padding: 6px 8px;
-  background: var(--n-color-embedded);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.credential-copy-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 8px;
-}
-
-.credential-code-block {
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-.credential-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-@media (max-width: 640px) {
-  .credential-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .credential-copy-row {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

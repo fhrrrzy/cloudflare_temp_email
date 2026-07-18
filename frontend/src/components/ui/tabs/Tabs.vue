@@ -5,7 +5,14 @@ import { reactiveOmit } from "@vueuse/core"
 import { TabsRoot, useForwardPropsEmits } from "reka-ui"
 import { cn } from "@/lib/utils"
 
-const props = defineProps<TabsRootProps & { class?: HTMLAttributes["class"] }>()
+const props = defineProps<{
+  modelValue?: string | number
+  defaultValue?: string | number
+  orientation?: 'horizontal' | 'vertical'
+  dir?: 'ltr' | 'rtl'
+  activationMode?: 'automatic' | 'manual'
+  class?: HTMLAttributes["class"]
+}>()
 const emits = defineEmits<TabsRootEmits>()
 
 const delegatedProps = reactiveOmit(props, "class")

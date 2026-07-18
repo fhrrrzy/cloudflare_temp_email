@@ -63,7 +63,7 @@ test.describe('Reply HTML & XSS Sanitization', () => {
       await mailItem.click();
 
       // Wait for Reply button to appear — signals email content has rendered
-      const replyButton = page.locator('button').filter({ hasText: /Reply/i }).first();
+      const replyButton = page.getByRole('button', { name: 'Reply', exact: true }).first();
       await expect(replyButton).toBeVisible({ timeout: 10_000 });
 
       // Click Reply — from here on, dialogs indicate sanitization failure (#857)
