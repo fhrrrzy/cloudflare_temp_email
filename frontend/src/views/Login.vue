@@ -1,89 +1,250 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-panel">
-      <!-- Brand Identity Section -->
-      <div class="brand-section">
-        <div class="logo-box">
-          <img src="/logo.png" alt="Logo" class="brand-logo" />
-        </div>
-        <h1 class="brand-title">Temp Mail Admin</h1>
-        <p class="brand-subtitle">Sign in to access your administrative dashboard</p>
-      </div>
-
-      <!-- Credentials Form -->
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-field">
-          <label for="username">Username</label>
-          <div class="input-wrapper">
-            <i class="pi pi-user field-icon" />
-            <input-text 
-              id="username" 
-              v-model="username" 
-              placeholder="admin" 
-              class="w-full text-input"
-              :class="{ 'p-invalid': error }"
-            />
+  <div class="auth-grid-container">
+    <!-- Left Column: Form Container -->
+    <div class="auth-form-column">
+      <div class="auth-inner-box">
+        <!-- Sign In Form -->
+        <form v-if="isSignIn" @submit.prevent="handleSignIn" autocomplete="on" class="auth-form-content">
+          <div class="form-header">
+            <h1 class="auth-title">Sign in to your account</h1>
+            <p class="auth-desc">Enter your credentials below to sign in</p>
           </div>
-        </div>
 
-        <div class="form-field">
-          <label for="password">Password</label>
-          <div class="input-wrapper">
-            <i class="pi pi-lock field-icon" />
-            <password 
-              id="password" 
-              v-model="password" 
-              placeholder="••••••••" 
-              :feedback="false" 
-              toggle-mask
-              class="w-full text-input"
-              input-class="w-full"
-              :class="{ 'p-invalid': error }"
-            />
+          <div class="fields-group">
+            <div class="field">
+              <label for="username">Username / Email</label>
+              <input-text 
+                id="username" 
+                v-model="username" 
+                placeholder="admin" 
+                required 
+                autocomplete="username"
+                class="w-full text-input-field"
+                :class="{ 'p-invalid': error }"
+              />
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="password-input-wrapper">
+                <input-text 
+                  id="password" 
+                  v-model="password" 
+                  :type="showPassword ? 'text' : 'password'" 
+                  placeholder="Password" 
+                  required 
+                  autocomplete="current-password"
+                  class="w-full text-input-field pe-10"
+                  :class="{ 'p-invalid': error }"
+                />
+                <button 
+                  type="button" 
+                  class="password-visibility-toggle" 
+                  @click="togglePasswordVisibility"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                >
+                  <i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+              </div>
+            </div>
           </div>
+
+          <!-- Alert message block -->
+          <div v-if="error" class="auth-error-alert">
+            <i class="pi pi-exclamation-circle" />
+            <span>{{ error }}</span>
+          </div>
+
+          <p-button 
+            type="submit" 
+            label="Sign In" 
+            class="w-full submit-action-btn" 
+            :loading="loading" 
+          />
+        </form>
+
+        <!-- Sign Up Form (Mock representation) -->
+        <form v-else @submit.prevent="handleSignUp" autocomplete="on" class="auth-form-content">
+          <div class="form-header">
+            <h1 class="auth-title">Create an account</h1>
+            <p class="auth-desc">Enter your details below to sign up</p>
+          </div>
+
+          <div class="fields-group">
+            <div class="field">
+              <label for="name">Full Name</label>
+              <input-text 
+                id="name" 
+                v-model="signupName" 
+                placeholder="John Doe" 
+                required 
+                autocomplete="name"
+                class="w-full text-input-field"
+              />
+            </div>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input-text 
+                id="email" 
+                v-model="signupEmail" 
+                placeholder="m@example.com" 
+                required 
+                autocomplete="email"
+                class="w-full text-input-field"
+              />
+            </div>
+
+            <div class="field">
+              <label for="signup-password">Password</label>
+              <div class="password-input-wrapper">
+                <input-text 
+                  id="signup-password" 
+                  v-model="signupPassword" 
+                  :type="showSignupPassword ? 'text' : 'password'" 
+                  placeholder="Password" 
+                  required 
+                  autocomplete="new-password"
+                  class="w-full text-input-field pe-10"
+                />
+                <button 
+                  type="button" 
+                  class="password-visibility-toggle" 
+                  @click="toggleSignupPasswordVisibility"
+                  :aria-label="showSignupPassword ? 'Hide password' : 'Show password'"
+                >
+                  <i :class="showSignupPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p-button 
+            type="submit" 
+            label="Sign Up" 
+            class="w-full submit-action-btn" 
+          />
+        </form>
+
+        <!-- Toggle Form Switcher -->
+        <div class="form-toggle-footer">
+          <span>{{ isSignIn ? "Don't have an account?" : "Already have an account?" }}</span>
+          <p-button 
+            :label="isSignIn ? 'Sign up' : 'Sign in'" 
+            class="p-button-link inline-toggle-btn" 
+            @click="toggleForm" 
+          />
         </div>
 
-        <!-- Alert messages -->
-        <div v-if="error" class="login-alert">
-          <i class="pi pi-exclamation-circle" />
-          <span>{{ error }}</span>
+        <!-- Divider -->
+        <div class="social-auth-divider">
+          <span>Or continue with</span>
         </div>
 
-        <!-- Submission Trigger -->
+        <!-- Google Mock Login -->
         <p-button 
-          type="submit" 
-          label="Sign In" 
-          icon="pi pi-sign-in" 
-          :loading="loading" 
-          class="w-full sign-in-btn" 
-        />
-      </form>
+          type="button" 
+          class="w-full google-signin-button" 
+          @click="handleGoogleClick"
+        >
+          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" class="google-logo" />
+          <span>Continue with Google</span>
+        </p-button>
+      </div>
+    </div>
 
-      <!-- Credentials Guidance Info -->
-      <div class="demo-credentials-box">
-        <div class="demo-header">
-          <i class="pi pi-info-circle"></i>
-          <span>Developer Credentials</span>
-        </div>
-        <div class="demo-line">Username: <code class="credentials-code">admin</code></div>
-        <div class="demo-line">Password: <code class="credentials-code">admin123</code></div>
+    <!-- Right Column: Visual Layout & Typewriter -->
+    <div 
+      class="auth-visual-column"
+      :style="{ backgroundImage: 'url(' + currentContent.image.src + ')' }"
+      :key="currentContent.image.src"
+    >
+      <!-- Bottom soft visual fade -->
+      <div class="visual-gradient-overlay"></div>
+      
+      <!-- Quote Block -->
+      <div class="quote-content-container">
+        <blockquote class="brand-blockquote">
+          <p class="quote-text-line">
+            “<typewriter-text 
+              :key="currentContent.quote.text" 
+              :text="currentContent.quote.text" 
+              :speed="60" 
+            />”
+          </p>
+          <cite class="quote-author-line">
+            — {{ currentContent.quote.author }}
+          </cite>
+        </blockquote>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '../services/authService'
+import TypewriterText from '@/components/TypewriterText.vue'
 
 const router = useRouter()
+
+// Sign-in inputs
 const username = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+const showPassword = ref(false)
 
-const handleLogin = () => {
+// Sign-up inputs (mock)
+const signupName = ref('')
+const signupEmail = ref('')
+const signupPassword = ref('')
+const showSignupPassword = ref(false)
+
+// Toggle sign-in / sign-up state
+const isSignIn = ref(true)
+
+const defaultSignInContent = {
+  image: {
+    src: "https://i.ibb.co/XrkdGrrv/original-ccdd6d6195fff2386a31b684b7abdd2e-removebg-preview.png",
+    alt: "A beautiful interior design for sign-in"
+  },
+  quote: {
+    text: "Welcome Back! The journey continues.",
+    author: "EaseMize UI"
+  }
+}
+
+const defaultSignUpContent = {
+  image: {
+    src: "https://i.ibb.co/HTZ6DPsS/original-33b8479c324a5448d6145b3cad7c51e7-removebg-preview.png",
+    alt: "A vibrant, modern space for new beginnings"
+  },
+  quote: {
+    text: "Create an account. A new chapter awaits.",
+    author: "EaseMize UI"
+  }
+}
+
+const currentContent = computed(() => {
+  return isSignIn.value ? defaultSignInContent : defaultSignUpContent
+})
+
+const toggleForm = () => {
+  isSignIn.value = !isSignIn.value
+  error.value = ''
+}
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
+}
+
+const toggleSignupPasswordVisibility = () => {
+  showSignupPassword.value = !showSignupPassword.value
+}
+
+const handleSignIn = () => {
   if (!username.value || !password.value) {
     error.value = 'Please enter both username and password.'
     return
@@ -92,7 +253,6 @@ const handleLogin = () => {
   loading.value = true
   error.value = ''
 
-  // Meticulous simulated latency for visual state polish
   setTimeout(() => {
     const success = authService.login(username.value, password.value)
     loading.value = false
@@ -103,142 +263,153 @@ const handleLogin = () => {
     }
   }, 500)
 }
+
+const handleSignUp = () => {
+  alert('Sign Up simulated successfully! User registration is restricted to system administrators.')
+}
+
+const handleGoogleClick = () => {
+  alert('Google authentication simulation: System is protected via hardcoded administrative access.')
+}
 </script>
 
 <style scoped>
-/* Slate-Dark layout structure to express security and administrative trust */
-.login-wrapper {
-  height: 100vh;
+/* Responsive Grid Container matching React grid layout */
+.auth-grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
   width: 100vw;
+  background-color: var(--slate-50);
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .auth-grid-container {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Left Form Column */
+.auth-form-column {
   display: flex;
+  height: 100vh;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  background-color: var(--slate-900); /* Bound to dark slate design token */
-  margin: 0;
-  padding: 0;
+  padding: 24px;
   box-sizing: border-box;
+  background-color: var(--bg-card, #ffffff);
 }
 
-/* Polished minimalist container card. No glassmorphism. No soft outer glow. */
-.login-panel {
-  background-color: #0f172a; /* Solid slate 900 card */
-  border: 1px solid var(--slate-800);
-  border-radius: 8px; /* Clean boundary, no over-rounding */
-  padding: 48px 40px;
+.auth-inner-box {
   width: 100%;
-  max-width: 420px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.brand-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.logo-box {
-  background-color: #1e293b;
-  padding: 12px;
-  border-radius: 8px;
-  display: inline-flex;
-  margin-bottom: 16px;
-  border: 1px solid var(--slate-800);
-}
-
-.brand-logo {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-}
-
-.brand-title {
-  color: #ffffff;
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 6px 0;
-  letter-spacing: -0.02em; /* Grotesque spacing alignment */
-}
-
-.brand-subtitle {
-  color: var(--slate-400);
-  font-size: 13px;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.login-form {
+  max-width: 350px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.form-field {
+.auth-form-content {
   display: flex;
   flex-direction: column;
+  gap: 32px;
+}
+
+.form-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
+  text-align: center;
+}
+
+.auth-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--slate-700);
+  margin: 0;
+}
+
+.auth-desc {
+  font-size: 14px;
+  color: var(--slate-500);
+  margin: 0;
+}
+
+.fields-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   text-align: left;
 }
 
-.form-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--slate-300);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.input-wrapper {
-  position: relative;
+.field {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.field-icon {
-  position: absolute;
-  left: 14px;
-  color: var(--slate-500);
+.field label {
   font-size: 14px;
-  z-index: 10;
+  font-weight: 500;
+  color: var(--slate-700);
 }
 
-/* Custom styled inputs bound to slate-green scheme */
-:deep(.text-input .p-inputtext) {
+/* Input Fields overrides */
+.text-input-field {
   width: 100%;
-  background-color: #1e293b !important;
-  border: 1px solid var(--slate-800) !important;
-  color: #ffffff !important;
-  padding: 10px 12px 10px 38px !important;
-  border-radius: 6px !important;
+  height: 40px;
+  background-color: var(--bg-card, #ffffff) !important;
+  border: 1px solid var(--slate-300) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
   font-size: 14px !important;
-  transition: border-color var(--transition-fast) !important;
+  color: var(--slate-700) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all var(--transition-fast) !important;
 }
 
-:deep(.text-input .p-inputtext:focus),
-:deep(.text-input .p-inputtext:enabled:hover:focus) {
+.text-input-field:focus {
   border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px var(--primary-tint) !important;
   outline: none !important;
 }
 
-:deep(.text-input .p-inputtext:hover) {
-  border-color: var(--slate-700) !important;
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
 }
 
-/* Override error outline */
-:deep(.text-input .p-inputtext.p-invalid) {
-  border-color: #ef4444 !important;
+.pe-10 {
+  padding-right: 40px !important;
 }
 
-/* Alert panel */
-.login-alert {
-  background-color: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  padding: 10px 14px;
+.password-visibility-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--slate-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.password-visibility-toggle:hover {
+  color: var(--slate-700);
+}
+
+/* Error Banner */
+.auth-error-alert {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
   border-radius: 6px;
+  color: #ef4444;
+  padding: 10px 14px;
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -246,60 +417,152 @@ const handleLogin = () => {
   text-align: left;
 }
 
-.login-alert i {
+.auth-error-alert i {
   font-size: 14px;
-  flex-shrink: 0;
 }
 
-/* High contrast primary action button */
-.sign-in-btn {
+/* Primary buttons */
+.submit-action-btn {
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
-  color: #0f172a !important; /* Premium dark text contrast */
-  font-weight: 700 !important;
-  padding: 10px 16px !important;
-  font-size: 14px !important;
-  border-radius: 6px !important;
+  color: #09090b !important; /* Premium dark text on emerald */
+  font-weight: 600 !important;
+  height: 40px !important;
+  border-radius: 8px !important;
 }
 
-.sign-in-btn:hover {
+.submit-action-btn:hover {
   background-color: var(--primary-hover) !important;
   border-color: var(--primary-hover) !important;
 }
 
-/* Credentials info panel */
-.demo-credentials-box {
-  background-color: #1e293b;
-  border: 1px solid var(--slate-800);
-  border-radius: 6px;
-  padding: 14px 18px;
-  font-size: 12px;
-  color: var(--slate-300);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  text-align: left;
-}
-
-.demo-header {
+.form-toggle-footer {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: var(--slate-100);
-  margin-bottom: 2px;
+  justify-content: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--slate-500);
 }
 
-.demo-line {
+.inline-toggle-btn {
+  padding: 0 !important;
+  font-weight: 500 !important;
+  color: var(--slate-700) !important;
+  text-decoration: none !important;
+}
+
+.inline-toggle-btn:hover {
+  text-decoration: underline !important;
+}
+
+/* Horizontal Divider styling */
+.social-auth-divider {
+  position: relative;
+  text-align: center;
+  font-size: 14px;
+  color: var(--slate-500);
+  margin: 10px 0;
+}
+
+.social-auth-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid var(--slate-200);
+  z-index: 1;
+}
+
+.social-auth-divider span {
+  position: relative;
+  z-index: 2;
+  background-color: var(--bg-card, #ffffff);
+  padding: 0 10px;
+}
+
+/* Google Sign-in button */
+.google-signin-button {
+  background-color: var(--bg-card, #ffffff) !important;
+  border: 1px solid var(--slate-300) !important;
+  color: var(--slate-700) !important;
+  font-weight: 500 !important;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 40px !important;
+  border-radius: 8px !important;
+  transition: background-color var(--transition-fast) !important;
 }
 
-.credentials-code {
-  background-color: #0f172a;
-  color: var(--primary-color);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-family: monospace;
+.google-signin-button:hover {
+  background-color: var(--slate-100) !important;
+}
+
+.google-logo {
+  width: 16px;
+  height: 16px;
+}
+
+/* Right Column: Visual panel showing images */
+.auth-visual-column {
+  display: none;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: all 0.5s ease-in-out;
+  background-color: var(--slate-800); /* Dark slate backup */
+}
+
+@media (min-width: 768px) {
+  .auth-visual-column {
+    display: block;
+  }
+}
+
+.visual-gradient-overlay {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(to top, var(--slate-900), transparent);
+  z-index: 2;
+}
+
+.quote-content-container {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.brand-blockquote {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  color: #ffffff;
+  margin: 0;
+}
+
+.quote-text-line {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.quote-author-line {
+  font-size: 14px;
+  font-style: normal;
+  color: var(--slate-300);
 }
 </style>
