@@ -341,23 +341,23 @@ const categoryFolders = [
   { id: 'promotions', name: 'Promotions' }
 ]
 
-const loadEmailsForAddress = () => {
+const loadEmailsForAddress = async () => {
   if (selectedEmailAddress.value) {
-    emails.value = mailService.getMails(selectedEmailAddress.value)
+    emails.value = await mailService.getMails(selectedEmailAddress.value)
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // If route query params has email, update store
   const emailQuery = props.initialEmail || route.query.email
   if (emailQuery) {
     selectedEmailAddress.value = emailQuery
   }
-  loadEmailsForAddress()
+  await loadEmailsForAddress()
 })
 
-watch(selectedEmailAddress, () => {
-  loadEmailsForAddress()
+watch(selectedEmailAddress, async () => {
+  await loadEmailsForAddress()
 })
 
 const setReadFilter = (state) => {
@@ -447,17 +447,17 @@ const getTagClass = (tag) => {
 }
 
 // Email selection logic
-const selectMail = (mail) => {
+const selectMail = async (mail) => {
   selectedMail.value = mail
   quickReplyText.value = ''
   if (!mail.isRead) {
-    mailService.markAsRead(mail.id, true)
+    await mailService.markAsRead(mail.id, true)
     mail.isRead = true
   }
 }
 
-const toggleStar = (mail) => {
-  mailService.toggleStar(mail.id)
+const toggleStar = async (mail) => {
+  await mailService.toggleStar(mail.id)
   mail.isStarred = !mail.isStarred
 }
 
@@ -497,11 +497,12 @@ const filteredEmails = computed(() => {
 })
 
 // Toolbar Actions
-const deleteMail = () => {
+const deleteMail = async () => {
   if (!selectedMail.value) return
-  if (confirm('Move this message to Trash?')) {
-    mailService.deleteMail(selectedMail.value.id)
-    loadEmailsForAddress()
+  if (confirm('Are you sure you want to delete this message?')) {
+    await mailService.deleteMail(selectedMail.value.id)
+    selectedMail.value = null
+    await loadEmailsForAddress()
   }
 }
 
@@ -522,45 +523,48 @@ const forwardActiveMail = () => {
 }
 
 // Quick Reply submit
-const submitQuickReply = () => {
+const submitQuickReply = async () => {
   if (!quickReplyText.value.trim()) return
   
   isSendingReply.value = true
-  setTimeout(() => {
+  try {
     const cleanTo = getEmailAddressFromSender(selectedMail.value.sender)
-    
-    // Simulate sending reply
-    mailService.sendMail(
+    await mailService.sendMail(
       selectedEmailAddress.value,
       cleanTo,
       `Re: ${selectedMail.value.subject}`,
       quickReplyText.value.trim()
     )
-
-    isSendingReply.value = false
     quickReplyText.value = ''
-    loadEmailsForAddress()
+    await loadEmailsForAddress()
     alert('Reply sent successfully!')
-  }, 800)
+  } catch (err) {
+    alert('Failed to send reply: ' + err.message)
+  } finally {
+    isSendingReply.value = false
+  }
 }
 
-const handleSendMail = () => {
+const handleSendMail = async () => {
   const model = composeModel.value
   if (!model.to.trim()) {
     alert('Please enter a recipient.')
     return
   }
 
-  mailService.sendMail(
-    selectedEmailAddress.value,
-    model.to.trim(),
-    model.subject.trim(),
-    model.body.trim()
-  )
-
-  isComposeOpen.value = false
-  loadEmailsForAddress()
-  alert('Email sent successfully!')
+  try {
+    await mailService.sendMail(
+      selectedEmailAddress.value,
+      model.to.trim(),
+      model.subject.trim(),
+      model.body.trim()
+    )
+    isComposeOpen.value = false
+    await loadEmailsForAddress()
+    alert('Email sent successfully!')
+  } catch (err) {
+    alert('Failed to send email: ' + err.message)
+  }
 }
 
 const downloadMockAttachment = (att) => {

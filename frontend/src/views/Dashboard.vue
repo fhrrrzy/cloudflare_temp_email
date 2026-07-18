@@ -143,7 +143,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { accountService } from '../services/accountService'
-import { mailService } from '../services/mailService'
+import { api } from '../api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -154,24 +154,34 @@ import { Users, CheckCircle2, Mail, Send, ArrowRight } from 'lucide-vue-next'
 const router = useRouter()
 
 const accounts = ref([])
-const emails = ref([])
+const totalAccountsRef = ref(0)
+const activeAccountsRef = ref(0)
+const totalReceivedMailsRef = ref(0)
+const totalSentMailsRef = ref(0)
 
-onMounted(() => {
-  accounts.value = accountService.getAccounts()
-  emails.value = mailService.getMails()
+onMounted(async () => {
+  accounts.value = await accountService.getAccounts()
+  try {
+    const stats = await api.fetch('/admin/statistics')
+    totalAccountsRef.value = stats.addressCount || 0
+    activeAccountsRef.value = stats.activeAddressCount7days || 0
+    totalReceivedMailsRef.value = stats.mailCount || 0
+    totalSentMailsRef.value = stats.sendMailCount || 0
+  } catch (e) {
+    console.error('Failed to load production stats', e)
+  }
 })
 
-const totalAccounts = computed(() => accounts.value.length)
-const activeAccounts = computed(() => accounts.value.filter(acc => acc.status === 'Active').length)
+const totalAccounts = computed(() => totalAccountsRef.value)
+const activeAccounts = computed(() => activeAccountsRef.value)
+const totalReceivedMails = computed(() => totalReceivedMailsRef.value)
+const totalSentMails = computed(() => totalSentMailsRef.value)
 
 const recentAccounts = computed(() => {
   return [...accounts.value]
     .sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate))
     .slice(0, 5)
 })
-
-const totalReceivedMails = computed(() => emails.value.filter(m => !m.isSent).length)
-const totalSentMails = computed(() => emails.value.filter(m => m.isSent).length)
 
 const navigateToAccounts = () => {
   router.push('/admin/accounts')

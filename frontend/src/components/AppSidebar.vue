@@ -46,26 +46,26 @@ const {
 const accounts = ref<any[]>([])
 const emails = ref<any[]>([])
 
-const loadMailboxes = () => {
-  accounts.value = accountService.getAccounts()
+const loadMailboxes = async () => {
+  accounts.value = await accountService.getAccounts()
   if (accounts.value.length > 0 && !adminMailTabAddress.value) {
     adminMailTabAddress.value = accounts.value[0].email
   }
-  loadEmailsForAddress()
+  await loadEmailsForAddress()
 }
 
-const loadEmailsForAddress = () => {
+const loadEmailsForAddress = async () => {
   if (adminMailTabAddress.value) {
-    emails.value = mailService.getMails(adminMailTabAddress.value)
+    emails.value = await mailService.getMails(adminMailTabAddress.value)
   }
 }
 
-onMounted(() => {
-  loadMailboxes()
+onMounted(async () => {
+  await loadMailboxes()
 })
 
-watch(adminMailTabAddress, () => {
-  loadEmailsForAddress()
+watch(adminMailTabAddress, async () => {
+  await loadEmailsForAddress()
 })
 
 const isWebmail = computed(() => {

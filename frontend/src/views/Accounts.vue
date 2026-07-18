@@ -430,12 +430,12 @@ const selectedDetailAccount = ref(null)
 const exportFormat = ref('txt')
 const currentExportIds = ref(null) // null means export all
 
-const loadAccounts = () => {
-  accounts.value = accountService.getAccounts()
+const loadAccounts = async () => {
+  accounts.value = await accountService.getAccounts()
 }
 
-onMounted(() => {
-  loadAccounts()
+onMounted(async () => {
+  await loadAccounts()
 })
 
 const filteredAccounts = computed(() => {
@@ -473,22 +473,24 @@ const openWebmail = (email) => {
   router.push({ path: '/admin/webmail', query: { email } })
 }
 
-const viewDetails = (account) => {
-  selectedDetailAccount.value = account
+const viewDetails = async (account) => {
+  const password = await accountService.showPassword(account.id)
+  selectedDetailAccount.value = { ...account, password }
   isDetailsOpen.value = true
 }
 
-const copyCredentials = (account) => {
-  const text = `Email: ${account.email}\nPassword: ${account.password}`
+const copyCredentials = async (account) => {
+  const password = await accountService.showPassword(account.id)
+  const text = `Email: ${account.email}\nPassword: ${password}`
   navigator.clipboard.writeText(text).then(() => {
     alert(`Copied credentials for ${account.email} to clipboard!`)
   })
 }
 
-const confirmDelete = (account) => {
+const confirmDelete = async (account) => {
   if (confirm(`Are you sure you want to delete ${account.email}?`)) {
-    accountService.deleteAccount(account.id)
-    loadAccounts()
+    await accountService.deleteAccount(account.id)
+    await loadAccounts()
   }
 }
 
@@ -498,16 +500,16 @@ const openSingleCreateDialog = () => {
   isSingleCreateOpen.value = true
 }
 
-const handleCreateSingle = () => {
+const handleCreateSingle = async () => {
   const prefix = singleAccount.value.prefix.trim()
   if (!prefix) {
     alert('Please enter a username.')
     return
   }
   const email = `${prefix}@codeflai.tech`
-  accountService.createAccount(email, singleAccount.value.password)
+  await accountService.createAccount(email, singleAccount.value.password)
   isSingleCreateOpen.value = false
-  loadAccounts()
+  await loadAccounts()
 }
 
 // Bulk Account Creation
@@ -519,7 +521,7 @@ const openBulkCreateDialog = () => {
   isBulkCreateOpen.value = true
 }
 
-const generateBulkPreview = () => {
+const generateBulkPreview = async () => {
   const namesText = bulkInput.value.names.trim()
   if (!namesText) {
     alert('Please enter at least one username.')
@@ -529,7 +531,7 @@ const generateBulkPreview = () => {
   const usernames = namesText.split('\n').map(n => n.trim()).filter(n => n.length > 0)
   const previews = []
   const errors = []
-  const existingAccounts = accountService.getAccounts()
+  const existingAccounts = await accountService.getAccounts()
 
   usernames.forEach(user => {
     const email = `${user}@codeflai.tech`
@@ -554,18 +556,15 @@ const generateBulkPreview = () => {
 
 const handleConfirmBulkCreate = () => {
   isBulkSubmitting.value = true
-  setTimeout(() => {
-    const rawList = bulkPreviewList.value.map(p => p.email.split('@')[0])
-    const defaultPass = bulkInput.value.passwordMode === 'custom' ? bulkInput.value.customPassword : ''
-    const autoGen = bulkInput.value.passwordMode === 'auto'
-    
-    // Simulate creation
-    const { errors } = accountService.bulkCreateAccounts(
-      rawList.map(name => `${name}@codeflai.tech`),
-      defaultPass,
-      autoGen
-    )
-
+  const rawList = bulkPreviewList.value.map(p => p.email.split('@')[0])
+  const defaultPass = bulkInput.value.passwordMode === 'custom' ? bulkInput.value.customPassword : ''
+  const autoGen = bulkInput.value.passwordMode === 'auto'
+  
+  accountService.bulkCreateAccounts(
+    rawList.map(name => `${name}@codeflai.tech`),
+    defaultPass,
+    autoGen
+  ).then(({ errors }) => {
     isBulkSubmitting.value = false
     isBulkCreateOpen.value = false
     loadAccounts()
@@ -575,7 +574,7 @@ const handleConfirmBulkCreate = () => {
     } else {
       alert(`Successfully created ${rawList.length} accounts!`)
     }
-  }, 1000)
+  })
 }
 
 // Export Accounts
@@ -589,8 +588,8 @@ const exportSelected = () => {
   isExportOpen.value = true
 }
 
-const triggerExport = () => {
-  const result = accountService.exportAccounts(exportFormat.value, currentExportIds.value)
+const triggerExport = async () => {
+  const result = await accountService.exportAccounts(exportFormat.value, currentExportIds.value)
   
   // Trigger browser file download
   const blob = new Blob([result.content], { type: result.mimeType })
@@ -608,12 +607,12 @@ const triggerExport = () => {
 }
 
 // Bulk Actions
-const deleteSelected = () => {
+const deleteSelected = async () => {
   if (confirm(`Are you sure you want to delete ${selectedAccounts.value.length} selected accounts?`)) {
-    selectedAccounts.value.forEach(acc => {
-      accountService.deleteAccount(acc.id)
-    })
-    loadAccounts()
+    for (const acc of selectedAccounts.value) {
+      await accountService.deleteAccount(acc.id)
+    }
+    await loadAccounts()
     selectedAccounts.value = []
   }
 }

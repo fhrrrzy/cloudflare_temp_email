@@ -22,6 +22,7 @@
         </main>
       </SidebarInset>
     </div>
+    <Toaster richColors />
   </SidebarProvider>
 </template>
 
@@ -30,6 +31,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/AppSidebar.vue'
+import { Toaster } from '@/components/ui/sonner'
 
 const route = useRoute()
 
