@@ -136,20 +136,6 @@
           />
         </div>
 
-        <!-- Divider -->
-        <div class="social-auth-divider">
-          <span>Or continue with</span>
-        </div>
-
-        <!-- Google Mock Login -->
-        <p-button 
-          type="button" 
-          class="w-full google-signin-button" 
-          @click="handleGoogleClick"
-        >
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" class="google-logo" />
-          <span>Continue with Google</span>
-        </p-button>
       </div>
     </div>
 
@@ -268,9 +254,6 @@ const handleSignUp = () => {
   alert('Sign Up simulated successfully! User registration is restricted to system administrators.')
 }
 
-const handleGoogleClick = () => {
-  alert('Google authentication simulation: System is protected via hardcoded administrative access.')
-}
 </script>
 
 <style scoped>
@@ -456,55 +439,6 @@ const handleGoogleClick = () => {
   text-decoration: underline !important;
 }
 
-/* Horizontal Divider styling */
-.social-auth-divider {
-  position: relative;
-  text-align: center;
-  font-size: 14px;
-  color: var(--slate-500);
-  margin: 10px 0;
-}
-
-.social-auth-divider::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  border-top: 1px solid var(--slate-200);
-  z-index: 1;
-}
-
-.social-auth-divider span {
-  position: relative;
-  z-index: 2;
-  background-color: var(--bg-card, #ffffff);
-  padding: 0 10px;
-}
-
-/* Google Sign-in button */
-.google-signin-button {
-  background-color: var(--bg-card, #ffffff) !important;
-  border: 1px solid var(--slate-300) !important;
-  color: var(--slate-700) !important;
-  font-weight: 500 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  height: 40px !important;
-  border-radius: 8px !important;
-  transition: background-color var(--transition-fast) !important;
-}
-
-.google-signin-button:hover {
-  background-color: var(--slate-100) !important;
-}
-
-.google-logo {
-  width: 16px;
-  height: 16px;
-}
 
 /* Right Column: Visual panel showing images */
 .auth-visual-column {
