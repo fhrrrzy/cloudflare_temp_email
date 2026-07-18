@@ -1,62 +1,137 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Index from '../views/Index.vue'
+import User from '../views/User.vue'
+import UserOauth2Callback from '../views/user/UserOauth2Callback.vue'
+import i18n from '../i18n'
+import { useGlobalState } from '../store'
 import { authService } from '../services/authService'
+import {
+    DEFAULT_LOCALE,
+    getBrowserLocales,
+    getPreferredLocale,
+    replaceLocaleInFullPath,
+    resolveSupportedLocale,
+} from '../i18n/utils'
+
+const { jwt, preferredLocale } = useGlobalState()
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    {
-      path: '/login',
-      name: 'Login',
-      component: () => import('../views/Login.vue')
-    },
-    {
-      path: '/dashboard',
-      component: () => import('../views/Layout.vue'),
-      redirect: '/dashboard/home',
-      children: [
+    history: createWebHistory(),
+    routes: [
         {
-          path: 'home',
-          name: 'DashboardHome',
-          component: () => import('../views/Dashboard.vue')
+            path: '/',
+            alias: '/:lang/',
+            component: Index
         },
         {
-          path: 'accounts',
-          name: 'Accounts',
-          component: () => import('../views/Accounts.vue')
+            path: '/user',
+            alias: '/:lang/user',
+            component: User
         },
         {
-          path: 'webmail',
-          name: 'Webmail',
-          component: () => import('../views/Webmail.vue'),
-          props: route => ({ initialEmail: route.query.email || null })
+            path: '/user/oauth2/callback',
+            alias: '/:lang/user/oauth2/callback',
+            component: UserOauth2Callback
         },
         {
-          path: 'settings',
-          name: 'Settings',
-          component: () => import('../views/Settings.vue')
+            path: '/login',
+            alias: '/:lang/login',
+            component: () => import('../views/Login.vue')
+        },
+        {
+            path: '/admin',
+            alias: '/:lang/admin',
+            component: () => import('../views/Layout.vue'),
+            redirect: '/admin/home',
+            children: [
+                {
+                    path: 'home',
+                    name: 'DashboardHome',
+                    component: () => import('../views/Dashboard.vue')
+                },
+                {
+                    path: 'accounts',
+                    name: 'Accounts',
+                    component: () => import('../views/Accounts.vue')
+                },
+                {
+                    path: 'webmail',
+                    name: 'Webmail',
+                    component: () => import('../views/Webmail.vue'),
+                    props: route => ({ initialEmail: route.query.email || null })
+                },
+                {
+                    path: 'settings',
+                    name: 'Settings',
+                    component: () => import('../views/Settings.vue')
+                }
+            ]
+        },
+        {
+            path: '/telegram_mail',
+            alias: '/:lang/telegram_mail',
+            component: () => import('../views/telegram/Mail.vue')
+        },
+        {
+            name: 'not-found',
+            path: '/:pathMatch(.*)*',
+            redirect: '/'
         }
-      ]
-    },
-    {
-      path: '/:pathMatch(.*)*',
-      redirect: '/dashboard'
-    }
-  ]
-})
+    ]
+});
 
-// Authentication navigation guard
 router.beforeEach((to, from, next) => {
-  const authenticated = authService.isAuthenticated()
+    // 1. Language and Locale Resolution
+    const routeLocale = resolveSupportedLocale(to.path.split('/')[1])
+    const resolvedLocale = routeLocale || DEFAULT_LOCALE
+    i18n.global.locale.value = resolvedLocale
 
-  if (to.path.startsWith('/dashboard') && !authenticated) {
-    next('/login')
-  } else if (to.path === '/login' && authenticated) {
-    next('/dashboard')
-  } else if (to.path === '/') {
-    next(authenticated ? '/dashboard' : '/login')
-  } else {
-    next()
-  }
-})
+    if (routeLocale) {
+        preferredLocale.value = routeLocale
+    } else if (!preferredLocale.value) {
+        preferredLocale.value = getPreferredLocale('', getBrowserLocales())
+    }
+
+    // 2. JWT Query Parameter interception (Important for E2E tests)
+    if (Object.prototype.hasOwnProperty.call(to.query, 'jwt')) {
+        const jwtQuery = Array.isArray(to.query.jwt) ? to.query.jwt[0] : to.query.jwt
+        if (typeof jwtQuery === 'string') {
+            jwt.value = jwtQuery
+        }
+        const query = { ...to.query }
+        delete query.jwt
+        next({
+            path: to.path,
+            query,
+            hash: to.hash,
+            replace: true,
+        })
+        return
+    }
+
+    if (routeLocale) {
+        const canonicalRoutePath = replaceLocaleInFullPath(to.fullPath, routeLocale)
+        if (canonicalRoutePath !== to.fullPath) {
+            return next(canonicalRoutePath)
+        }
+    }
+
+    if (routeLocale === DEFAULT_LOCALE) {
+        return next(replaceLocaleInFullPath(to.fullPath, DEFAULT_LOCALE))
+    }
+
+    // 3. Admin dashboard authorization guard
+    const pathWithoutLocale = to.path.replace(/^\/(?:en|zh|de|es|pt|ja)\//, '/')
+    const isDashboardRoute = pathWithoutLocale.startsWith('/admin')
+    const authenticated = authService.isAuthenticated()
+
+    if (isDashboardRoute && !authenticated) {
+        next('/login')
+    } else if (pathWithoutLocale === '/login' && authenticated) {
+        next('/admin')
+    } else {
+        next()
+    }
+});
 
 export default router

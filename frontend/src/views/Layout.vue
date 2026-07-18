@@ -8,22 +8,22 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard/home" class="nav-item" active-class="active">
+        <router-link to="/admin/home" class="nav-item" active-class="active">
           <i class="pi pi-chart-bar"></i>
           <span v-if="!isSidebarCollapsed">Dashboard</span>
         </router-link>
         
-        <router-link to="/dashboard/accounts" class="nav-item" active-class="active">
+        <router-link to="/admin/accounts" class="nav-item" active-class="active">
           <i class="pi pi-users"></i>
           <span v-if="!isSidebarCollapsed">Account Management</span>
         </router-link>
         
-        <router-link to="/dashboard/webmail" class="nav-item" active-class="active">
+        <router-link to="/admin/webmail" class="nav-item" active-class="active">
           <i class="pi pi-envelope"></i>
           <span v-if="!isSidebarCollapsed">Webmail client</span>
         </router-link>
         
-        <router-link to="/dashboard/settings" class="nav-item" active-class="active">
+        <router-link to="/admin/settings" class="nav-item" active-class="active">
           <i class="pi pi-cog"></i>
           <span v-if="!isSidebarCollapsed">Settings</span>
         </router-link>
@@ -196,8 +196,8 @@ const handleLogout = () => {
 }
 
 .nav-item.active {
-  background-color: #0ea5e9;
-  color: #ffffff;
+  background-color: var(--primary-color);
+  color: #09090b; /* Dark text for emerald contrast */
 }
 
 .sidebar-toggle {
