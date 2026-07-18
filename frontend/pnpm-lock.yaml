@@ -44,6 +44,12 @@ importers:
       postal-mime:
         specifier: ^2.7.4
         version: 2.7.4
+      primeicons:
+        specifier: ^8.0.0
+        version: 8.0.0
+      primevue:
+        specifier: ^3.53.1
+        version: 3.53.1(vue@3.5.38(typescript@5.4.5))
       vooks:
         specifier: ^0.2.12
         version: 0.2.12(vue@3.5.38(typescript@5.4.5))
@@ -2583,6 +2589,14 @@ packages:
   pretty-bytes@6.1.1:
     resolution: {integrity: sha512-mQUvGU6aUFQ+rNvTIAcZuWGRT9a6f6Yrg9bHs4ImKF+HZCEK+plBvnAZYSIQztknZF2qnzNtr6F8s0+IuptdlQ==}
     engines: {node: ^14.13.1 || >=16.0.0}
+
+  primeicons@8.0.0:
+    resolution: {integrity: sha512-eZGk+Mgb4fE+LkJi9LvllbnB4RVUF9kzmnLVnT3ZMY6stqKVh7TUJ0mFoMNIEgTnJSvhaGcJotDiSvtVvkHd7g==}
+
+  primevue@3.53.1:
+    resolution: {integrity: sha512-Bp4peZPdhfKYXwvtsOGGh5dfgmTelm+LZEZKGs/c5mOHhsUJ6xi3EcOZoQVI6oklS946ayMQvgD5L0S7itGO0g==}
+    peerDependencies:
+      vue: ^3.0.0
 
   prismjs@1.30.0:
     resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
@@ -5841,6 +5855,12 @@ snapshots:
   pretty-bytes@5.6.0: {}
 
   pretty-bytes@6.1.1: {}
+
+  primeicons@8.0.0: {}
+
+  primevue@3.53.1(vue@3.5.38(typescript@5.4.5)):
+    dependencies:
+      vue: 3.5.38(typescript@5.4.5)
 
   prismjs@1.30.0: {}
 

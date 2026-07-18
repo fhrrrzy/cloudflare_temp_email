@@ -34,6 +34,8 @@
     "mail-parser-wasm": "^0.2.2",
     "naive-ui": "^2.44.1",
     "postal-mime": "^2.7.4",
+    "primeicons": "^8.0.0",
+    "primevue": "^3.53.1",
     "vooks": "^0.2.12",
     "vue": "^3.5.38",
     "vue-clipboard3": "^2.0.0",
