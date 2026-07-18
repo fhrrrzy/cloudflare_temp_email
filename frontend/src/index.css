@@ -1,0 +1,68 @@
+/* Design System Tokens using OKLCH */
+
+:root {
+  /* Brand Primary Accent: Emerald Green */
+  --primary-color: oklch(0.68 0.17 154);      /* Vibrant emerald */
+  --primary-hover: oklch(0.62 0.16 154);      /* Slightly darker hover state */
+  --primary-active: oklch(0.55 0.14 154);     /* Active state */
+  --primary-tint: oklch(0.96 0.03 154);       /* Light tint background */
+
+  /* Neutral Slate Palette */
+  --slate-50: oklch(0.98 0.005 240);          /* Off-white */
+  --slate-100: oklch(0.95 0.008 240);         /* Very light gray background */
+  --slate-200: oklch(0.91 0.01 240);          /* Card border/divider */
+  --slate-300: oklch(0.85 0.015 240);         /* Input border */
+  --slate-400: oklch(0.70 0.02 240);          /* Secondary text label */
+  --slate-500: oklch(0.55 0.02 240);          /* Body text secondary */
+  --slate-600: oklch(0.40 0.02 240);          /* Subtitles */
+  --slate-700: oklch(0.28 0.02 240);          /* Main headings */
+  --slate-800: oklch(0.20 0.02 240);          /* Heavy slate background */
+  --slate-900: oklch(0.12 0.02 240);          /* Almost black */
+
+  /* Semantic Variables */
+  --bg-app: var(--slate-50);
+  --bg-card: #ffffff;
+  --bg-sidebar: var(--slate-900);
+  --border-color: var(--slate-200);
+
+  /* Animation and Transition */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base resets & typography */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-app);
+  color: var(--slate-700);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom override utility styles for PrimeVue to bind to our CSS variables */
+.p-button.p-button-primary,
+.brand-btn,
+.brand-button {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #09090b !important; /* Dark text for high contrast on light emerald */
+  font-weight: 600 !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.p-button.p-button-primary:hover,
+.brand-btn:hover,
+.brand-button:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+.p-button.p-button-primary:active,
+.brand-btn:active,
+.brand-button:active {
+  background-color: var(--primary-active) !important;
+  border-color: var(--primary-active) !important;
+}

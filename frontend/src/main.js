@@ -3,9 +3,10 @@ import { createHead } from '@unhead/vue/client'
 import PrimeVue from 'primevue/config'
 
 // PrimeVue CSS theme and resources
-import 'primevue/resources/themes/lara-light-blue/theme.css'
+import 'primevue/resources/themes/lara-light-green/theme.css'
 import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
+import './index.css'
 
 import App from './App.vue'
 import router from './router'
