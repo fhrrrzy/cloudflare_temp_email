@@ -341,7 +341,7 @@ const formatDateTime = (isoString) => {
 
 // Action button triggers
 const openWebmail = (email) => {
-  router.push({ path: '/dashboard/webmail', query: { email } })
+  router.push({ path: '/admin/webmail', query: { email } })
 }
 
 const viewDetails = (account) => {

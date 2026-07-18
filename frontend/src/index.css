@@ -1,29 +1,32 @@
-/* Design System Tokens using OKLCH */
+/* Design System Tokens: Zinc & Emerald (Dark Mode Only) */
 
 :root {
   /* Brand Primary Accent: Emerald Green */
   --primary-color: oklch(0.68 0.17 154);      /* Vibrant emerald */
-  --primary-hover: oklch(0.62 0.16 154);      /* Slightly darker hover state */
+  --primary-hover: oklch(0.62 0.16 154);      /* Slightly darker hover */
   --primary-active: oklch(0.55 0.14 154);     /* Active state */
-  --primary-tint: oklch(0.96 0.03 154);       /* Light tint background */
+  --primary-tint: rgba(16, 185, 129, 0.15);   /* Emerald green glow tint */
 
-  /* Neutral Slate Palette */
-  --slate-50: oklch(0.98 0.005 240);          /* Off-white */
-  --slate-100: oklch(0.95 0.008 240);         /* Very light gray background */
-  --slate-200: oklch(0.91 0.01 240);          /* Card border/divider */
-  --slate-300: oklch(0.85 0.015 240);         /* Input border */
-  --slate-400: oklch(0.70 0.02 240);          /* Secondary text label */
-  --slate-500: oklch(0.55 0.02 240);          /* Body text secondary */
-  --slate-600: oklch(0.40 0.02 240);          /* Subtitles */
-  --slate-700: oklch(0.28 0.02 240);          /* Main headings */
-  --slate-800: oklch(0.20 0.02 240);          /* Heavy slate background */
-  --slate-900: oklch(0.12 0.02 240);          /* Almost black */
+  /* Neutral Zinc Palette */
+  --zinc-50: oklch(0.98 0.002 240);
+  --zinc-100: oklch(0.92 0.002 240);
+  --zinc-200: oklch(0.84 0.002 240);
+  --zinc-300: oklch(0.71 0.002 240);
+  --zinc-400: oklch(0.57 0.002 240);          /* Secondary labels */
+  --zinc-500: oklch(0.44 0.002 240);
+  --zinc-600: oklch(0.32 0.002 240);
+  --zinc-700: oklch(0.23 0.002 240);          /* Divider / borders */
+  --zinc-800: oklch(0.16 0.002 240);          /* Input bg */
+  --zinc-900: oklch(0.12 0.002 240);          /* Card bg / sidebar */
+  --zinc-950: oklch(0.09 0.002 240);          /* Body bg */
 
-  /* Semantic Variables */
-  --bg-app: var(--slate-50);
-  --bg-card: #ffffff;
-  --bg-sidebar: var(--slate-900);
-  --border-color: var(--slate-200);
+  /* Semantic Variables (Dark theme only) */
+  --bg-app: var(--zinc-950);
+  --bg-card: var(--zinc-900);
+  --bg-sidebar: var(--zinc-900);
+  --border-color: var(--zinc-800);
+  --text-primary: #ffffff;
+  --text-secondary: var(--zinc-400);
 
   /* Animation and Transition */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -35,34 +38,47 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-app);
-  color: var(--slate-700);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom override utility styles for PrimeVue to bind to our CSS variables */
-.p-button.p-button-primary,
-.brand-btn,
-.brand-button {
+/* Custom override styles for resolved PrimeVue components to match our custom properties */
+.p-button.form-submit-btn,
+.p-button.brand-btn,
+.p-button.brand-button,
+.p-button.p-button-primary {
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
-  color: #09090b !important; /* Dark text for high contrast on light emerald */
+  color: var(--zinc-950) !important; /* High contrast dark text on emerald */
   font-weight: 600 !important;
   transition: all var(--transition-fast) !important;
 }
 
-.p-button.p-button-primary:hover,
-.brand-btn:hover,
-.brand-button:hover {
+.p-button.form-submit-btn:hover,
+.p-button.brand-btn:hover,
+.p-button.brand-button:hover,
+.p-button.p-button-primary:hover {
   background-color: var(--primary-hover) !important;
   border-color: var(--primary-hover) !important;
-  transform: translateY(-1px);
 }
 
-.p-button.p-button-primary:active,
-.brand-btn:active,
-.brand-button:active {
-  background-color: var(--primary-active) !important;
-  border-color: var(--primary-active) !important;
+/* Custom compact table designs */
+.p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
+  background-color: var(--zinc-900) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  font-size: 13px;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr {
+  background-color: var(--zinc-950) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  font-size: 13px;
+}
+
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr:hover {
+  background-color: var(--zinc-800) !important;
 }

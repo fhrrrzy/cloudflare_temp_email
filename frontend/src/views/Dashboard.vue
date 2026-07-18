@@ -150,7 +150,7 @@ const totalReceivedMails = computed(() => emails.value.filter(m => !m.isSent).le
 const totalSentMails = computed(() => emails.value.filter(m => m.isSent).length)
 
 const navigateToAccounts = () => {
-  router.push('/dashboard/accounts')
+  router.push('/admin/accounts')
 }
 
 const formatDate = (isoString) => {
@@ -179,33 +179,28 @@ const formatDate = (isoString) => {
 }
 
 .stat-card {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
   padding: 24px;
   display: flex;
   align-items: center;
   gap: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .stat-icon {
   width: 48px;
   height: 48px;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.stat-icon i {
-  font-size: 20px;
-}
-
-.stat-icon.blue { background-color: #e0f2fe; color: #0284c7; }
-.stat-icon.green { background-color: #dcfce7; color: #16a34a; }
-.stat-icon.orange { background-color: #ffedd5; color: #ea580c; }
-.stat-icon.purple { background-color: #f3e8ff; color: #9333ea; }
+.stat-icon.blue { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
+.stat-icon.green { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
+.stat-icon.orange { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
+.stat-icon.purple { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
 
 .stat-details {
   display: flex;
@@ -215,9 +210,9 @@ const formatDate = (isoString) => {
 
 .stat-details h3 {
   margin: 0;
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
+  font-size: 11px;
+  color: var(--zinc-400);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -225,7 +220,7 @@ const formatDate = (isoString) => {
 .stat-details .value {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: #ffffff;
   margin-top: 4px;
 }
 
@@ -243,17 +238,16 @@ const formatDate = (isoString) => {
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   box-sizing: border-box;
 }
 
 .card h2 {
-  font-size: 18px;
-  color: #0f172a;
+  font-size: 16px;
+  color: #ffffff;
   margin: 0 0 20px 0;
   text-align: left;
   font-weight: 600;
@@ -287,28 +281,28 @@ const formatDate = (isoString) => {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #64748b;
+  color: var(--zinc-400);
   font-weight: 500;
 }
 
 .pct {
   font-weight: 600;
-  color: #1e293b;
+  color: #ffffff;
 }
 
 .green-text {
-  color: #16a34a;
+  color: var(--primary-color);
 }
 
 /* Custom progress-bar colors */
-:deep(.green-bar .p-progressbar-value) { background-color: #16a34a; }
-:deep(.blue-bar .p-progressbar-value) { background-color: #0ea5e9; }
-:deep(.orange-bar .p-progressbar-value) { background-color: #f97316; }
-:deep(.purple-bar .p-progressbar-value) { background-color: #a855f7; }
+:deep(.green-bar .p-progressbar-value) { background-color: var(--primary-color); }
+:deep(.blue-bar .p-progressbar-value) { background-color: var(--primary-color); }
+:deep(.orange-bar .p-progressbar-value) { background-color: var(--primary-color); }
+:deep(.purple-bar .p-progressbar-value) { background-color: var(--primary-color); }
 
 :deep(.p-progressbar) {
-  height: 8px;
-  background-color: #f1f5f9;
-  border-radius: 4px;
+  height: 6px;
+  background-color: var(--zinc-800);
+  border-radius: 3px;
 }
 </style>

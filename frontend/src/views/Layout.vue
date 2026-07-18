@@ -118,19 +118,18 @@ const handleLogout = () => {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: #f8fafc;
+  background-color: var(--bg-app);
 }
 
-/* Sidebar Styles */
 .sidebar {
   width: 260px;
-  background-color: #0f172a;
+  background-color: var(--zinc-900);
   color: #f8fafc;
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  border-right: 1px solid #1e293b;
+  border-right: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
@@ -144,7 +143,7 @@ const handleLogout = () => {
   align-items: center;
   padding: 0 20px;
   gap: 12px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--border-color);
   overflow: hidden;
 }
 
@@ -202,7 +201,7 @@ const handleLogout = () => {
 
 .sidebar-toggle {
   height: 40px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -226,8 +225,8 @@ const handleLogout = () => {
 /* Navbar Styles */
 .navbar {
   height: 70px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--zinc-900);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -239,7 +238,7 @@ const handleLogout = () => {
   font-family: 'Outfit', sans-serif;
   font-size: 22px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .navbar-right {
@@ -252,21 +251,22 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  border-right: 1px solid #e2e8f0;
+  border-right: 1px solid var(--border-color);
   padding-right: 20px;
 }
 
 .avatar {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background-color: #e0f2fe;
-  color: #0369a1;
+  background-color: var(--primary-tint);
+  color: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .user-info {
@@ -278,14 +278,14 @@ const handleLogout = () => {
 
 .username {
   font-weight: 600;
-  color: #1e293b;
+  color: #ffffff;
   font-size: 14px;
   line-height: 1.2;
 }
 
 .role {
   font-size: 11px;
-  color: #64748b;
+  color: var(--zinc-400);
 }
 
 .logout-button {
