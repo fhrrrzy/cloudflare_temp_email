@@ -9,28 +9,29 @@
 
       <nav class="nav-menu">
         <router-link to="/admin/home" class="nav-item" active-class="active">
-          <i class="pi pi-chart-bar"></i>
+          <LayoutDashboard class="h-[18px] w-[18px] shrink-0" />
           <span v-if="!isSidebarCollapsed">Dashboard</span>
         </router-link>
         
         <router-link to="/admin/accounts" class="nav-item" active-class="active">
-          <i class="pi pi-users"></i>
+          <Users class="h-[18px] w-[18px] shrink-0" />
           <span v-if="!isSidebarCollapsed">Account Management</span>
         </router-link>
         
         <router-link to="/admin/webmail" class="nav-item" active-class="active">
-          <i class="pi pi-envelope"></i>
+          <Mail class="h-[18px] w-[18px] shrink-0" />
           <span v-if="!isSidebarCollapsed">Webmail client</span>
         </router-link>
         
         <router-link to="/admin/settings" class="nav-item" active-class="active">
-          <i class="pi pi-cog"></i>
+          <SettingsIcon class="h-[18px] w-[18px] shrink-0" />
           <span v-if="!isSidebarCollapsed">Settings</span>
         </router-link>
       </nav>
 
       <div class="sidebar-toggle" @click="toggleSidebar">
-        <i :class="isSidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"></i>
+        <ChevronRight v-if="isSidebarCollapsed" class="h-4 w-4" />
+        <ChevronLeft v-else class="h-4 w-4" />
       </div>
     </aside>
 
@@ -52,11 +53,13 @@
           </div>
           
           <Button 
-            icon="pi pi-sign-out" 
-            label="Logout" 
-            class="p-button-text p-button-secondary logout-button" 
+            variant="ghost" 
+            class="logout-button gap-2 hover:bg-zinc-800 text-zinc-400 hover:text-red-400"
             @click="handleLogout" 
-          />
+          >
+            <LogOut class="h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </header>
 
@@ -72,6 +75,16 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { authService } from '../services/authService'
+import { Button } from '@/components/ui/button'
+import { 
+  LayoutDashboard, 
+  Users, 
+  Mail, 
+  Settings as SettingsIcon, 
+  LogOut, 
+  ChevronLeft, 
+  ChevronRight 
+} from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -176,17 +189,12 @@ const handleLogout = () => {
   gap: 15px;
   padding: 12px 15px;
   border-radius: 8px;
-  color: #94a3b8;
+  color: var(--zinc-400);
   text-decoration: none;
   font-weight: 500;
   font-size: 14px;
   white-space: nowrap;
   transition: all 0.2s ease;
-}
-
-.nav-item i {
-  font-size: 18px;
-  flex-shrink: 0;
 }
 
 .nav-item:hover {
@@ -195,8 +203,8 @@ const handleLogout = () => {
 }
 
 .nav-item.active {
-  background-color: var(--primary-color);
-  color: #09090b; /* Dark text for emerald contrast */
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .sidebar-toggle {
@@ -259,8 +267,8 @@ const handleLogout = () => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: var(--primary-tint);
-  color: var(--primary-color);
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -286,16 +294,6 @@ const handleLogout = () => {
 .role {
   font-size: 11px;
   color: var(--zinc-400);
-}
-
-.logout-button {
-  color: #64748b !important;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.logout-button:hover {
-  color: #ef4444 !important;
 }
 
 /* Content Area */

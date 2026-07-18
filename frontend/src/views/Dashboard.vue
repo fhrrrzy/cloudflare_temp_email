@@ -1,122 +1,140 @@
 <template>
-  <div class="dashboard-home">
+  <div class="space-y-8">
     <!-- Stat Cards Grid -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon blue">
-          <i class="pi pi-users"></i>
-        </div>
-        <div class="stat-details">
-          <h3>Total Accounts</h3>
-          <span class="value">{{ totalAccounts }}</span>
-        </div>
-      </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Card class="border-border bg-card">
+        <CardContent class="flex items-center gap-4 p-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 text-primary border border-emerald-500/20">
+            <Users class="h-5 w-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Accounts</p>
+            <h3 class="text-2xl font-bold text-white mt-1">{{ totalAccounts }}</h3>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div class="stat-card">
-        <div class="stat-icon green">
-          <i class="pi pi-check-circle"></i>
-        </div>
-        <div class="stat-details">
-          <h3>Active Accounts</h3>
-          <span class="value">{{ activeAccounts }}</span>
-        </div>
-      </div>
+      <Card class="border-border bg-card">
+        <CardContent class="flex items-center gap-4 p-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 text-primary border border-emerald-500/20">
+            <CheckCircle2 class="h-5 w-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Active Accounts</p>
+            <h3 class="text-2xl font-bold text-white mt-1">{{ activeAccounts }}</h3>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div class="stat-card">
-        <div class="stat-icon orange">
-          <i class="pi pi-envelope"></i>
-        </div>
-        <div class="stat-details">
-          <h3>Total Emails Received</h3>
-          <span class="value">{{ totalReceivedMails }}</span>
-        </div>
-      </div>
+      <Card class="border-border bg-card">
+        <CardContent class="flex items-center gap-4 p-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 text-primary border border-emerald-500/20">
+            <Mail class="h-5 w-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Received</p>
+            <h3 class="text-2xl font-bold text-white mt-1">{{ totalReceivedMails }}</h3>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div class="stat-card">
-        <div class="stat-icon purple">
-          <i class="pi pi-send"></i>
-        </div>
-        <div class="stat-details">
-          <h3>Total Emails Sent</h3>
-          <span class="value">{{ totalSentMails }}</span>
-        </div>
-      </div>
+      <Card class="border-border bg-card">
+        <CardContent class="flex items-center gap-4 p-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 text-primary border border-emerald-500/20">
+            <Send class="h-5 w-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Sent</p>
+            <h3 class="text-2xl font-bold text-white mt-1">{{ totalSentMails }}</h3>
+          </div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Quick Actions and Progress Overview -->
-    <div class="dashboard-details">
+    <div class="grid gap-6 md:grid-cols-12">
       <!-- Left Panel: Recent Accounts Table -->
-      <div class="card recent-accounts-card">
-        <div class="card-header">
-          <h2>Recently Created Accounts</h2>
+      <Card class="border-border bg-card md:col-span-7">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle class="text-lg font-semibold text-white">Recently Created Accounts</CardTitle>
           <Button 
-            label="View All" 
-            icon="pi pi-arrow-right" 
-            class="p-button-text p-button-sm" 
+            variant="ghost" 
+            size="sm" 
+            class="text-xs text-primary hover:bg-emerald-500/10 hover:text-primary gap-1"
             @click="navigateToAccounts" 
-          />
-        </div>
-        
-        <data-table 
-          :value="recentAccounts" 
-          responsive-layout="scroll" 
-          class="p-datatable-sm"
-          :rows="5"
-        >
-          <column field="email" header="Email Address"></column>
-          <column field="creationDate" header="Created On">
-            <template #body="slotProps">
-              {{ formatDate(slotProps.data.creationDate) }}
-            </template>
-          </column>
-          <column field="status" header="Status">
-            <template #body="slotProps">
-              <badge 
-                :value="slotProps.data.status" 
-                :severity="slotProps.data.status === 'Active' ? 'success' : 'danger'" 
-              />
-            </template>
-          </column>
-        </data-table>
-      </div>
+          >
+            View All
+            <ArrowRight class="h-3 w-3" />
+          </Button>
+        </CardHeader>
+        <CardContent class="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow class="hover:bg-transparent">
+                <TableHead class="text-zinc-400 font-medium text-xs">Email Address</TableHead>
+                <TableHead class="text-zinc-400 font-medium text-xs">Created On</TableHead>
+                <TableHead class="text-zinc-400 font-medium text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="account in recentAccounts" :key="account.id" class="border-border/50 hover:bg-zinc-800/30">
+                <TableCell class="text-sm text-zinc-100 py-3">{{ account.email }}</TableCell>
+                <TableCell class="text-sm text-zinc-400 py-3">{{ formatDate(account.creationDate) }}</TableCell>
+                <TableCell class="py-3">
+                  <Badge :variant="account.status === 'Active' ? 'default' : 'destructive'" class="text-xs">
+                    {{ account.status }}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="recentAccounts.length === 0">
+                <TableCell colspan="3" class="text-center text-zinc-500 py-8">
+                  No accounts found
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <!-- Right Panel: System Metrics -->
-      <div class="card system-metrics-card">
-        <h2>System Utilization</h2>
-        <div class="metric-progress-list">
-          <div class="progress-item">
-            <div class="progress-info">
-              <span>SMTP Server Status</span>
-              <span class="pct green-text">Operational (100%)</span>
+      <Card class="border-border bg-card md:col-span-5">
+        <CardHeader>
+          <CardTitle class="text-lg font-semibold text-white">System Utilization</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-6">
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-zinc-400">SMTP Server Status</span>
+              <span class="text-primary">Operational (100%)</span>
             </div>
-            <progress-bar :value="100" :show-value="false" class="green-bar" />
+            <Progress :model-value="100" class="h-1.5 bg-zinc-800" />
           </div>
 
-          <div class="progress-item">
-            <div class="progress-info">
-              <span>D1 Database Storage</span>
-              <span class="pct">4.8 MB of 500 MB (1.2%)</span>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-zinc-400">D1 Database Storage</span>
+              <span class="text-white">4.8 MB of 500 MB (1.2%)</span>
             </div>
-            <progress-bar :value="1.2" :show-value="false" class="blue-bar" />
+            <Progress :model-value="1.2" class="h-1.5 bg-zinc-800" />
           </div>
 
-          <div class="progress-item">
-            <div class="progress-info">
-              <span>Worker Request Limits</span>
-              <span class="pct">14,242 of 100,000 (14.2%)</span>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-zinc-400">Worker Request Limits</span>
+              <span class="text-white">14,242 of 100,000 (14.2%)</span>
             </div>
-            <progress-bar :value="14.2" :show-value="false" class="orange-bar" />
+            <Progress :model-value="14.2" class="h-1.5 bg-zinc-800" />
           </div>
           
-          <div class="progress-item">
-            <div class="progress-info">
-              <span>Attachment Buffer (S3)</span>
-              <span class="pct">0.5 GB of 10 GB (5.0%)</span>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-zinc-400">Attachment Buffer (S3)</span>
+              <span class="text-white">0.5 GB of 10 GB (5.0%)</span>
             </div>
-            <progress-bar :value="5.0" :show-value="false" class="purple-bar" />
+            <Progress :model-value="5.0" class="h-1.5 bg-zinc-800" />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>
@@ -126,6 +144,12 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { accountService } from '../services/accountService'
 import { mailService } from '../services/mailService'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Users, CheckCircle2, Mail, Send, ArrowRight } from 'lucide-vue-next'
 
 const router = useRouter()
 
@@ -163,146 +187,3 @@ const formatDate = (isoString) => {
   })
 }
 </script>
-
-<style scoped>
-.dashboard-home {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-/* Stats Cards Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-}
-
-.stat-card {
-  background: var(--bg-card);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-icon.blue { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
-.stat-icon.green { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
-.stat-icon.orange { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
-.stat-icon.purple { background-color: var(--primary-tint); color: var(--primary-color); border: 1px solid rgba(16, 185, 129, 0.2); }
-
-.stat-details {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.stat-details h3 {
-  margin: 0;
-  font-size: 11px;
-  color: var(--zinc-400);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-details .value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-top: 4px;
-}
-
-/* Dashboard Details Section */
-.dashboard-details {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 30px;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-details {
-    grid-template-columns: 1fr;
-  }
-}
-
-.card {
-  background: var(--bg-card);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.card h2 {
-  font-size: 16px;
-  color: #ffffff;
-  margin: 0 0 20px 0;
-  text-align: left;
-  font-weight: 600;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.card-header h2 {
-  margin: 0;
-}
-
-/* System Metrics progress bars */
-.metric-progress-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.progress-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--zinc-400);
-  font-weight: 500;
-}
-
-.pct {
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.green-text {
-  color: var(--primary-color);
-}
-
-/* Custom progress-bar colors */
-:deep(.green-bar .p-progressbar-value) { background-color: var(--primary-color); }
-:deep(.blue-bar .p-progressbar-value) { background-color: var(--primary-color); }
-:deep(.orange-bar .p-progressbar-value) { background-color: var(--primary-color); }
-:deep(.purple-bar .p-progressbar-value) { background-color: var(--primary-color); }
-
-:deep(.p-progressbar) {
-  height: 6px;
-  background-color: var(--zinc-800);
-  border-radius: 3px;
-}
-</style>

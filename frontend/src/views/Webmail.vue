@@ -1,93 +1,97 @@
 <template>
-  <div class="webmail-dark-container">
+  <div class="webmail-dark-container border border-border rounded-lg bg-card text-white overflow-hidden shadow-2xl">
     <!-- 1. LEFT SIDEBAR: Accounts & Folders/Categories -->
-    <div class="webmail-left-sidebar">
+    <div class="webmail-left-sidebar flex flex-col border-r border-border bg-zinc-950/40">
       <!-- Account Selection Dropdown -->
-      <div class="account-header">
-        <dropdown 
-          v-model="selectedEmailAddress" 
-          :options="accountEmails" 
-          placeholder="Select an account" 
-          class="account-dropdown w-full"
-          @change="onMailboxChange"
-        >
-          <template #value="slotProps">
-            <div class="account-dropdown-value" v-if="slotProps.value">
-              <i class="pi pi-user-edit account-avatar-icon"></i>
-              <span class="account-name-text">{{ getAccountDisplayName(slotProps.value) }}</span>
-            </div>
-            <span v-else>{{ slotProps.placeholder }}</span>
-          </template>
-        </dropdown>
+      <div class="account-header p-4 border-b border-border">
+        <Select v-model="selectedEmailAddress" @update:model-value="onMailboxChange">
+          <SelectTrigger class="w-full border-border bg-zinc-900 text-white flex items-center justify-between">
+            <SelectValue placeholder="Select an account" />
+          </SelectTrigger>
+          <SelectContent class="border-border bg-zinc-900 text-white">
+            <SelectItem v-for="email in accountEmails" :key="email" :value="email">
+              {{ getAccountDisplayName(email) }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <!-- Main Folders Menu -->
-      <div class="menu-section">
+      <div class="menu-section p-3 space-y-1">
         <div 
           v-for="folder in mainFolders" 
           :key="folder.id" 
-          class="menu-item" 
-          :class="{ 'active': currentFolder === folder.id }"
+          class="menu-item flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors" 
+          :class="currentFolder === folder.id ? 'bg-primary text-primary-foreground' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40'"
           @click="selectFolder(folder.id)"
         >
-          <div class="item-left">
-            <i :class="folder.icon"></i>
+          <div class="item-left flex items-center gap-3">
+            <component :is="getIconComponent(folder.icon)" class="h-4 w-4 shrink-0" />
             <span>{{ folder.name }}</span>
           </div>
-          <span v-if="getFolderCount(folder.id) > 0" class="item-badge">
+          <span 
+            v-if="getFolderCount(folder.id) > 0" 
+            class="px-1.5 py-0.5 rounded text-[10px]"
+            :class="currentFolder === folder.id ? 'bg-primary-foreground text-primary' : 'bg-zinc-800 text-zinc-300'"
+          >
             {{ getFolderCount(folder.id) }}
           </span>
         </div>
       </div>
 
-      <hr class="menu-divider" />
+      <div class="border-t border-border my-2"></div>
 
       <!-- Categories Menu -->
-      <div class="menu-section">
+      <div class="menu-section p-3 space-y-1 flex-grow">
         <div 
           v-for="cat in categoryFolders" 
           :key="cat.id" 
-          class="menu-item" 
-          :class="{ 'active': currentFolder === cat.id }"
+          class="menu-item flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors" 
+          :class="currentFolder === cat.id ? 'bg-primary text-primary-foreground' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40'"
           @click="selectFolder(cat.id)"
         >
-          <div class="item-left">
-            <i :class="cat.icon"></i>
+          <div class="item-left flex items-center gap-3">
+            <component :is="getIconComponent(cat.icon)" class="h-4 w-4 shrink-0" />
             <span>{{ cat.name }}</span>
           </div>
-          <span v-if="getCategoryCount(cat.id) > 0" class="item-badge font-normal">
+          <span 
+            v-if="getCategoryCount(cat.id) > 0" 
+            class="px-1.5 py-0.5 rounded text-[10px]"
+            :class="currentFolder === cat.id ? 'bg-primary-foreground text-primary' : 'bg-zinc-800 text-zinc-300'"
+          >
             {{ getCategoryCount(cat.id) }}
           </span>
         </div>
       </div>
 
       <!-- Bottom Compose Button -->
-      <div class="sidebar-compose-footer">
+      <div class="sidebar-compose-footer p-4 border-t border-border bg-zinc-950/20">
         <Button 
-          label="Compose Mail" 
-          icon="pi pi-pencil" 
-          class="w-full p-button-sm compose-action-btn" 
+          class="w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2" 
           @click="openComposeDialog"
-        />
+        >
+          <Pencil class="h-4 w-4" />
+          Compose Mail
+        </Button>
       </div>
     </div>
 
     <!-- 2. MIDDLE COLUMN: Emails List -->
-    <div class="webmail-middle-column">
+    <div class="webmail-middle-column flex flex-col border-r border-border">
       <!-- Title & Mail Filters Header -->
-      <div class="middle-column-header">
-        <h2 class="folder-title">{{ getFolderTitle() }}</h2>
-        <div class="filter-tabs">
+      <div class="middle-column-header p-4 border-b border-border flex items-center justify-between">
+        <h2 class="folder-title text-sm font-semibold text-white">{{ getFolderTitle() }}</h2>
+        <div class="filter-tabs flex bg-zinc-900 border border-border p-0.5 rounded-md">
           <button 
-            class="tab-btn" 
-            :class="{ 'active': filterReadState === 'all' }"
+            class="px-2.5 py-1 text-[11px] font-medium rounded-sm transition-colors" 
+            :class="filterReadState === 'all' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'"
             @click="setReadFilter('all')"
           >
-            All mail
+            All
           </button>
           <button 
-            class="tab-btn" 
-            :class="{ 'active': filterReadState === 'unread' }"
+            class="px-2.5 py-1 text-[11px] font-medium rounded-sm transition-colors" 
+            :class="filterReadState === 'unread' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'"
             @click="setReadFilter('unread')"
           >
             Unread
@@ -96,52 +100,55 @@
       </div>
 
       <!-- Search Box -->
-      <div class="search-box-container">
-        <div class="search-input-wrapper">
-          <i class="pi pi-search search-icon"></i>
-          <input-text 
+      <div class="search-box-container p-3 border-b border-border bg-zinc-950/20">
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+          <Input 
             v-model="mailSearchQuery" 
-            placeholder="Search" 
-            class="search-input-field" 
+            placeholder="Search emails..." 
+            class="h-9 pl-9 border-border bg-zinc-900/40 text-white placeholder-zinc-500 text-xs" 
           />
         </div>
       </div>
 
       <!-- Emails List Container -->
-      <div class="emails-scroll-container">
-        <div v-if="filteredEmails.length === 0" class="empty-emails-placeholder">
-          <i class="pi pi-envelope empty-icon"></i>
-          <p>No messages found</p>
+      <div class="emails-scroll-container flex-grow overflow-y-auto divide-y divide-border/40">
+        <div v-if="filteredEmails.length === 0" class="flex flex-col items-center justify-center py-12 text-zinc-500 gap-3">
+          <Mail class="h-8 w-8 text-zinc-600" />
+          <p class="text-xs">No messages found</p>
         </div>
 
         <div 
           v-else
           v-for="mail in filteredEmails" 
           :key="mail.id" 
-          class="email-card-item"
-          :class="{ 'selected': selectedMail?.id === mail.id, 'unread': !mail.isRead }"
+          class="email-card-item p-4 cursor-pointer transition-colors relative"
+          :class="[
+            selectedMail?.id === mail.id ? 'bg-zinc-800/40' : 'hover:bg-zinc-800/20',
+            !mail.isRead ? 'border-l-2 border-primary' : ''
+          ]"
           @click="selectMail(mail)"
         >
-          <div class="card-header-line">
-            <span class="sender">{{ getCleanSender(mail.sender) }}</span>
-            <span class="time">{{ relativeTime(mail.date) }}</span>
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span class="font-semibold text-zinc-100 truncate pr-2">{{ getCleanSender(mail.sender) }}</span>
+            <span class="text-zinc-400 shrink-0">{{ relativeTime(mail.date) }}</span>
           </div>
 
-          <div class="card-subject-line">
-            {{ mail.subject }}
-            <span v-if="!mail.isRead" class="unread-dot-indicator"></span>
+          <div class="text-xs font-medium text-white truncate mb-1 flex items-center justify-between">
+            <span>{{ mail.subject }}</span>
+            <span v-if="!mail.isRead" class="h-1.5 w-1.5 rounded-full bg-primary shrink-0 ml-2"></span>
           </div>
 
-          <div class="card-snippet-line">
+          <div class="text-[11px] text-zinc-400 line-clamp-2">
             {{ getSnippet(mail.content) }}
           </div>
 
           <!-- Email tags/pills -->
-          <div v-if="mail.tags && mail.tags.length > 0" class="card-tags-row">
+          <div v-if="mail.tags && mail.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
             <span 
               v-for="tag in mail.tags" 
               :key="tag" 
-              class="tag-pill"
+              class="px-1.5 py-0.5 rounded text-[9px] font-semibold tracking-wider uppercase border"
               :class="getTagClass(tag)"
             >
               {{ tag }}
@@ -152,179 +159,199 @@
     </div>
 
     <!-- 3. RIGHT COLUMN: Email Reading Pane -->
-    <div class="webmail-right-column">
+    <div class="webmail-right-column flex flex-col bg-zinc-950/10">
       <!-- Active Message State -->
-      <div v-if="selectedMail" class="active-reading-layout">
-        <!-- Reading Header Actions -->
-        <div class="reading-toolbar">
-          <div class="toolbar-left">
+      <div v-if="selectedMail" class="flex flex-col h-full overflow-hidden">
+        <!-- Reading Header Actions Toolbar -->
+        <div class="reading-toolbar h-14 border-b border-border px-4 flex items-center justify-between bg-zinc-950/20 shrink-0">
+          <div class="flex items-center gap-1">
             <Button 
-              icon="pi pi-archive" 
-              class="toolbar-btn" 
-              v-tooltip.top="'Archive'" 
+              variant="ghost" 
+              size="icon" 
+              class="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
               @click="archiveActiveMail"
-            />
+              title="Archive"
+            >
+              <Archive class="h-4 w-4" />
+            </Button>
             <Button 
-              icon="pi pi-trash" 
-              class="toolbar-btn text-red-hover" 
-              v-tooltip.top="'Move to Trash'" 
+              variant="ghost" 
+              size="icon" 
+              class="h-8 w-8 text-zinc-400 hover:text-red-400 hover:bg-red-950/20"
               @click="deleteMail"
-            />
+              title="Delete"
+            >
+              <Trash2 class="h-4 w-4" />
+            </Button>
           </div>
 
-          <div class="toolbar-divider"></div>
-
-          <div class="toolbar-left">
+          <div class="flex items-center gap-1">
             <Button 
-              icon="pi pi-clock" 
-              class="toolbar-btn" 
-              v-tooltip.top="'Snooze'" 
-              @click="snoozeActiveMail"
-            />
-          </div>
-
-          <div class="toolbar-right">
-            <Button 
-              icon="pi pi-reply" 
-              class="toolbar-btn" 
-              v-tooltip.top="'Reply'" 
+              variant="ghost" 
+              size="icon" 
+              class="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
               @click="replyMail"
-            />
+              title="Reply"
+            >
+              <Reply class="h-4 w-4" />
+            </Button>
             <Button 
-              icon="pi pi-reply" 
-              class="toolbar-btn pi-flip-h" 
-              v-tooltip.top="'Reply All'" 
-              @click="replyMail"
-            />
-            <Button 
-              icon="pi pi-arrow-right" 
-              class="toolbar-btn" 
-              v-tooltip.top="'Forward'" 
+              variant="ghost" 
+              size="icon" 
+              class="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
               @click="forwardActiveMail"
-            />
-            <div class="toolbar-divider inline"></div>
-            <Button 
-              icon="pi pi-ellipsis-v" 
-              class="toolbar-btn" 
-              v-tooltip.top="'More actions'" 
-            />
+              title="Forward"
+            >
+              <Forward class="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         <!-- Sender Details Box -->
-        <div class="reading-meta-header">
-          <div class="meta-left">
-            <div class="avatar-initials-circle">
+        <div class="reading-meta-header p-6 border-b border-border flex items-start justify-between bg-zinc-950/10 shrink-0">
+          <div class="flex items-start gap-4">
+            <div class="h-10 w-10 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-sm select-none">
               {{ getInitials(selectedMail.sender) }}
             </div>
-            <div class="meta-sender-lines">
-              <h3 class="sender-title">{{ getCleanSender(selectedMail.sender) }}</h3>
-              <p class="subject-subtitle">{{ selectedMail.subject }}</p>
-              <p class="reply-to-line">Reply-To: {{ getEmailAddressFromSender(selectedMail.sender) }}</p>
+            <div class="space-y-1">
+              <h3 class="text-sm font-semibold text-white leading-none">{{ getCleanSender(selectedMail.sender) }}</h3>
+              <p class="text-xs text-zinc-400">{{ selectedMail.subject }}</p>
+              <p class="text-[10px] text-zinc-500 font-mono">From: {{ getEmailAddressFromSender(selectedMail.sender) }}</p>
             </div>
           </div>
-          <div class="meta-right">
-            <span class="full-timestamp">{{ formatFullDate(selectedMail.date) }}</span>
-          </div>
+          <span class="text-xs text-zinc-400">{{ formatFullDate(selectedMail.date) }}</span>
         </div>
 
         <!-- Attachment Download Banner -->
-        <div v-if="selectedMail.attachments && selectedMail.attachments.length > 0" class="attachments-panel">
-          <div class="attachments-header">
-            <i class="pi pi-paperclip"></i>
+        <div v-if="selectedMail.attachments && selectedMail.attachments.length > 0" class="attachments-panel p-4 border-b border-border bg-zinc-900/30 shrink-0">
+          <div class="flex items-center gap-2 text-xs font-semibold text-zinc-300 mb-2">
+            <Paperclip class="h-4 w-4" />
             <span>Attachments ({{ selectedMail.attachments.length }})</span>
           </div>
-          <div class="attachments-flex-list">
-            <div v-for="(att, idx) in selectedMail.attachments" :key="idx" class="att-card" @click="downloadMockAttachment(att)">
-              <i class="pi pi-file-pdf"></i>
-              <div class="att-meta">
-                <span class="att-name">{{ att.filename }}</span>
-                <span class="att-size">{{ att.size }}</span>
+          <div class="flex flex-wrap gap-2">
+            <div 
+              v-for="(att, idx) in selectedMail.attachments" 
+              :key="idx" 
+              class="flex items-center gap-3 bg-zinc-900 border border-border px-3 py-2 rounded-md text-xs cursor-pointer hover:bg-zinc-800 transition-colors"
+              @click="downloadMockAttachment(att)"
+            >
+              <FileText class="h-4 w-4 text-zinc-400" />
+              <div class="flex flex-col text-left">
+                <span class="text-zinc-200 font-medium max-w-[120px] truncate">{{ att.filename }}</span>
+                <span class="text-[10px] text-zinc-500">{{ att.size }}</span>
               </div>
-              <i class="pi pi-download download-hover"></i>
+              <Download class="h-3.5 w-3.5 text-zinc-400 hover:text-white" />
             </div>
           </div>
         </div>
 
         <!-- Sandboxed Iframe Reading Body -->
-        <div class="reading-body-scrollable">
+        <div class="reading-body-scrollable flex-grow p-6 overflow-y-auto">
           <iframe 
             :srcdoc="selectedMail.content" 
             sandbox="allow-popups" 
-            class="mail-display-iframe"
+            class="w-full h-full min-h-[300px] bg-transparent"
             frameborder="0"
           ></iframe>
         </div>
 
         <!-- Bottom Quick Reply Text Area -->
-        <div class="quick-reply-section">
+        <div class="quick-reply-section p-4 border-t border-border bg-zinc-950/20 shrink-0 space-y-3">
           <textarea 
             v-model="quickReplyText"
             :placeholder="'Reply ' + getCleanSender(selectedMail.sender) + '...'"
-            class="quick-reply-textarea"
+            class="flex min-h-[60px] w-full rounded-md border border-border bg-zinc-900/40 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             rows="3"
           ></textarea>
           
-          <div class="quick-reply-controls">
-            <div class="mute-thread-toggle">
-              <checkbox id="mute-thread" v-model="isThreadMuted" :binary="true" />
-              <label for="mute-thread" class="mute-label">Mute this thread</label>
-            </div>
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer select-none">
+              <input type="checkbox" v-model="isThreadMuted" class="h-3.5 w-3.5 rounded border-zinc-700 bg-zinc-900 text-primary focus:ring-primary" />
+              Mute thread
+            </label>
             
             <Button 
-              label="Send" 
-              icon="pi pi-send" 
-              class="p-button-sm p-button-secondary send-reply-btn" 
-              :loading="isSendingReply"
+              size="sm" 
+              class="h-8 bg-zinc-900 border border-border text-zinc-300 hover:bg-zinc-800 hover:text-white gap-1.5" 
+              :disabled="isSendingReply"
               @click="submitQuickReply"
-            />
+            >
+              <Send class="h-3.5 w-3.5" />
+              <span v-if="isSendingReply">Sending...</span>
+              <span v-else>Send Reply</span>
+            </Button>
           </div>
         </div>
       </div>
 
       <!-- Unselected Message Placeholder State -->
-      <div v-else class="unselected-reading-placeholder">
-        <i class="pi pi-envelope open-icon"></i>
-        <h2>No Message Selected</h2>
-        <p>Choose an email from the list to read it here.</p>
+      <div v-else class="flex-grow flex flex-col items-center justify-center text-zinc-500 p-8 gap-3">
+        <Mail class="h-10 w-10 text-zinc-700" />
+        <h2 class="text-sm font-semibold text-white">No Message Selected</h2>
+        <p class="text-xs text-zinc-400">Choose an email from the list to read it here.</p>
       </div>
     </div>
 
     <!-- Compose Message Dialog -->
-    <p-dialog v-model:visible="isComposeOpen" header="New Message" modal :style="{ width: '550px' }">
-      <div class="form-fields">
-        <div class="field">
-          <label for="compose-from">From</label>
-          <input-text id="compose-from" :value="selectedEmailAddress" disabled class="w-full" />
+    <Dialog v-model:open="isComposeOpen">
+      <DialogContent class="sm:max-w-xl border-border bg-card text-white">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-semibold text-white">New Message</DialogTitle>
+          <DialogDescription class="text-xs text-zinc-400">
+            Send an email from your administration email pool.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label class="text-xs text-zinc-300">From</Label>
+              <Input :value="selectedEmailAddress" disabled class="h-9 border-border bg-zinc-950 text-zinc-500" />
+            </div>
+            
+            <div class="space-y-2">
+              <Label for="compose-to" class="text-xs text-zinc-300">To</Label>
+              <Input 
+                id="compose-to" 
+                v-model="composeModel.to" 
+                placeholder="recipient@example.com" 
+                class="h-9 border-border bg-zinc-900/50 text-white placeholder-zinc-500 focus:ring-1 focus:ring-primary focus:border-primary" 
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="compose-subject" class="text-xs text-zinc-300">Subject</Label>
+            <Input 
+              id="compose-subject" 
+              v-model="composeModel.subject" 
+              placeholder="Enter subject line" 
+              class="h-9 border-border bg-zinc-900/50 text-white placeholder-zinc-500 focus:ring-1 focus:ring-primary focus:border-primary" 
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label for="compose-body" class="text-xs text-zinc-300">Message Body</Label>
+            <textarea 
+              id="compose-body" 
+              v-model="composeModel.body" 
+              rows="8" 
+              placeholder="Type your message details here..."
+              class="flex min-h-[160px] w-full rounded-md border border-border bg-zinc-900/50 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
         </div>
-        
-        <div class="field">
-          <label for="compose-to">To</label>
-          <input-text id="compose-to" v-model="composeModel.to" placeholder="recipient@example.com" class="w-full" />
-        </div>
-        
-        <div class="field">
-          <label for="compose-subject">Subject</label>
-          <input-text id="compose-subject" v-model="composeModel.subject" placeholder="Enter subject" class="w-full" />
-        </div>
-        
-        <div class="field">
-          <label for="compose-body">Message</label>
-          <textarea 
-            id="compose-body" 
-            v-model="composeModel.body" 
-            rows="8" 
-            placeholder="Type your message here..."
-            class="w-full text-area"
-          />
-        </div>
-      </div>
-      
-      <template #footer>
-        <Button label="Discard" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isComposeOpen = false" />
-        <Button label="Send" icon="pi pi-send" class="brand-btn" @click="handleSendMail" />
-      </template>
-    </p-dialog>
+
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="ghost" class="hover:bg-zinc-800 text-zinc-400 hover:text-white" @click="isComposeOpen = false">
+            Discard
+          </Button>
+          <Button class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" @click="handleSendMail">
+            Send Email
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -333,6 +360,19 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { accountService } from '../services/accountService'
 import { mailService } from '../services/mailService'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Inbox, FileText, Send, AlertTriangle, Trash2, Archive, 
+  Users, RefreshCw, MessageSquare, ShoppingBag, Tag, 
+  Search, Pencil, Reply, Forward, Star, Paperclip, Printer, Download, Eye,
+  Mail
+} from 'lucide-vue-next'
 
 const props = defineProps({
   initialEmail: {
@@ -363,21 +403,30 @@ const composeModel = ref({ to: '', subject: '', body: '' })
 
 // Sidebar folder definitions
 const mainFolders = [
-  { id: 'inbox', name: 'Inbox', icon: 'pi pi-inbox' },
-  { id: 'drafts', name: 'Drafts', icon: 'pi pi-file' },
-  { id: 'sent', name: 'Sent', icon: 'pi pi-send' },
-  { id: 'junk', name: 'Junk', icon: 'pi pi-exclamation-triangle' },
-  { id: 'trash', name: 'Trash', icon: 'pi pi-trash' },
-  { id: 'archive', name: 'Archive', icon: 'pi pi-archive' }
+  { id: 'inbox', name: 'Inbox', icon: 'Inbox' },
+  { id: 'drafts', name: 'Drafts', icon: 'FileText' },
+  { id: 'sent', name: 'Sent', icon: 'Send' },
+  { id: 'junk', name: 'Junk', icon: 'AlertTriangle' },
+  { id: 'trash', name: 'Trash', icon: 'Trash2' },
+  { id: 'archive', name: 'Archive', icon: 'Archive' }
 ]
 
 const categoryFolders = [
-  { id: 'social', name: 'Social', icon: 'pi pi-users' },
-  { id: 'updates', name: 'Updates', icon: 'pi pi-bell' },
-  { id: 'forums', name: 'Forums', icon: 'pi pi-comments' },
-  { id: 'shopping', name: 'Shopping', icon: 'pi pi-shopping-bag' },
-  { id: 'promotions', name: 'Promotions', icon: 'pi pi-percentage' }
+  { id: 'social', name: 'Social', icon: 'Users' },
+  { id: 'updates', name: 'Updates', icon: 'RefreshCw' },
+  { id: 'forums', name: 'Forums', icon: 'MessageSquare' },
+  { id: 'shopping', name: 'Shopping', icon: 'ShoppingBag' },
+  { id: 'promotions', name: 'Promotions', icon: 'Tag' }
 ]
+
+const iconMap = {
+  Inbox, FileText, Send, AlertTriangle, Trash2, Archive,
+  Users, RefreshCw, MessageSquare, ShoppingBag, Tag
+}
+
+const getIconComponent = (iconName) => {
+  return iconMap[iconName] || Inbox
+}
 
 // Lifecycles
 onMounted(() => {
@@ -522,9 +571,9 @@ const formatFullDate = (isoString) => {
 
 // Tags UI color coding
 const getTagClass = (tag) => {
-  if (tag === 'important' || tag === 'security') return 'tag-important'
-  if (tag === 'work' || tag === 'billing') return 'tag-work'
-  return 'tag-default'
+  if (tag === 'important' || tag === 'security') return 'border-red-900/30 bg-red-950/20 text-red-400'
+  if (tag === 'work' || tag === 'billing') return 'border-emerald-900/30 bg-emerald-950/20 text-emerald-400'
+  return 'border-zinc-800 bg-zinc-900/30 text-zinc-400'
 }
 
 // Email selection logic
@@ -678,759 +727,21 @@ watch(() => props.initialEmail, (newEmail) => {
 </script>
 
 <style scoped>
-/* Dark Slate Theme matching Shadcn-ui exactly */
 .webmail-dark-container {
   display: grid;
-  grid-template-columns: 260px 360px 1fr;
-  height: calc(100vh - 130px);
-  background-color: #09090b; /* Zinc 950 */
-  color: #fafafa; /* Zinc 50 */
-  border: 1px solid #27272a; /* Zinc 800 */
-  border-radius: 12px;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  grid-template-columns: 240px 320px 1fr;
+  height: calc(100vh - 140px);
 }
 
-@media (max-width: 1200px) {
-  .webmail-dark-container {
-    grid-template-columns: 220px 300px 1fr;
-  }
-}
-
-/* 1. LEFT SIDEBAR STYLES */
 .webmail-left-sidebar {
-  background-color: #09090b;
-  border-right: 1px solid #27272a;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  height: 100%;
 }
 
-.account-header {
-  margin-bottom: 20px;
-}
-
-/* Custom styled PrimeVue Dropdown for account switcher */
-:deep(.account-dropdown) {
-  background: #09090b !important;
-  border: 1px solid #27272a !important;
-  color: #fafafa !important;
-  border-radius: 6px !important;
-  padding: 2px 4px !important;
-}
-
-:deep(.account-dropdown:hover) {
-  border-color: #3f3f46 !important;
-}
-
-:deep(.account-dropdown .p-dropdown-trigger) {
-  color: #a1a1aa !important;
-}
-
-:deep(.account-dropdown .p-dropdown-panel) {
-  background-color: #09090b !important;
-  border: 1px solid #27272a !important;
-  color: #fafafa !important;
-}
-
-:deep(.account-dropdown .p-dropdown-items-wrapper) {
-  background-color: #09090b !important;
-}
-
-:deep(.account-dropdown .p-dropdown-item) {
-  color: #e4e4e7 !important;
-  padding: 8px 12px !important;
-}
-
-:deep(.account-dropdown .p-dropdown-item:hover),
-:deep(.account-dropdown .p-dropdown-item.p-highlight) {
-  background-color: #18181b !important;
-  color: #ffffff !important;
-}
-
-.account-dropdown-value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: left;
-}
-
-.account-avatar-icon {
-  font-size: 14px;
-  color: #a1a1aa;
-  background-color: #18181b;
-  padding: 6px;
-  border-radius: 4px;
-}
-
-.account-name-text {
-  font-weight: 500;
-  font-size: 14px;
-  color: #fafafa;
-}
-
-.menu-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #a1a1aa; /* Zinc 400 */
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-
-.menu-item:hover {
-  background-color: #18181b; /* Zinc 900 */
-  color: #fafafa;
-}
-
-.menu-item.active {
-  background-color: #27272a; /* Zinc 800 */
-  color: #ffffff;
-}
-
-.item-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.item-left i {
-  font-size: 15px;
-  width: 16px;
-  text-align: center;
-}
-
-.item-badge {
-  background-color: #18181b;
-  color: #fafafa;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid #27272a;
-}
-
-.menu-divider {
-  border: 0;
-  border-top: 1px solid #27272a;
-  margin: 15px 0;
-}
-
-.sidebar-compose-footer {
-  margin-top: auto;
-  padding-top: 15px;
-}
-
-.compose-action-btn {
-  background-color: #fafafa !important;
-  color: #09090b !important;
-  border: none !important;
-  font-weight: 600 !important;
-  border-radius: 6px !important;
-}
-
-.compose-action-btn:hover {
-  background-color: #e4e4e7 !important;
-}
-
-/* 2. MIDDLE COLUMN STYLES */
 .webmail-middle-column {
-  border-right: 1px solid #27272a;
-  background-color: #09090b;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  height: 100%;
 }
 
-.middle-column-header {
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #27272a;
-}
-
-.folder-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-  color: #fafafa;
-}
-
-.filter-tabs {
-  background-color: #18181b;
-  border: 1px solid #27272a;
-  border-radius: 6px;
-  padding: 2px;
-  display: flex;
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  color: #a1a1aa;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.tab-btn:hover {
-  color: #fafafa;
-}
-
-.tab-btn.active {
-  background-color: #27272a;
-  color: #ffffff;
-}
-
-.search-box-container {
-  padding: 12px 20px;
-  border-bottom: 1px solid #27272a;
-}
-
-.search-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  color: #71717a;
-  font-size: 13px;
-}
-
-.search-input-field {
-  width: 100%;
-  background-color: #18181b !important;
-  border: 1px solid #27272a !important;
-  border-radius: 6px !important;
-  padding: 8px 12px 8px 36px !important;
-  font-size: 14px !important;
-  color: #fafafa !important;
-}
-
-.search-input-field:focus {
-  border-color: #3f3f46 !important;
-}
-
-.emails-scroll-container {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.empty-emails-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 20px;
-  color: #71717a;
-}
-
-.empty-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
-}
-
-/* Email Card Item */
-.email-card-item {
-  background-color: #09090b;
-  border: 1px solid #27272a;
-  border-radius: 8px;
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  position: relative;
-}
-
-.email-card-item:hover {
-  background-color: #18181b;
-}
-
-.email-card-item.selected {
-  background-color: #27272a; /* Zinc 800 */
-  border-color: #3f3f46;
-}
-
-.card-header-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.email-card-item .sender {
-  font-size: 14px;
-  font-weight: 600;
-  color: #fafafa;
-}
-
-.email-card-item .time {
-  font-size: 12px;
-  color: #71717a;
-}
-
-.card-subject-line {
-  font-size: 13px;
-  font-weight: 500;
-  color: #fafafa;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-right: 15px;
-}
-
-.unread .card-subject-line {
-  font-weight: 700;
-}
-
-.unread-dot-indicator {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background-color: #3b82f6; /* Blue 500 */
-  border-radius: 50%;
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-.card-snippet-line {
-  font-size: 12px;
-  color: #a1a1aa; /* Zinc 400 */
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-tags-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-
-.tag-pill {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  text-transform: capitalize;
-}
-
-.tag-important {
-  background-color: #fafafa;
-  color: #09090b;
-}
-
-.tag-work {
-  background-color: #27272a;
-  color: #fafafa;
-  border: 1px solid #3f3f46;
-}
-
-.tag-default {
-  background-color: #18181b;
-  color: #a1a1aa;
-  border: 1px solid #27272a;
-}
-
-/* 3. RIGHT COLUMN STYLES */
 .webmail-right-column {
-  background-color: #09090b;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
   height: 100%;
-}
-
-.unselected-reading-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-  color: #71717a;
-  padding: 40px;
-}
-
-.unselected-reading-placeholder .open-icon {
-  font-size: 40px;
-  color: #27272a;
-  margin-bottom: 15px;
-}
-
-.unselected-reading-placeholder h2 {
-  font-size: 18px;
-  margin: 0;
-  color: #e4e4e7;
-}
-
-.unselected-reading-placeholder p {
-  font-size: 14px;
-  margin: 8px 0 0 0;
-}
-
-.active-reading-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* Toolbar actions inside message pane */
-.reading-toolbar {
-  height: 52px;
-  border-bottom: 1px solid #27272a;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 4px;
-}
-
-.toolbar-right {
-  margin-left: auto;
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 20px;
-  background-color: #27272a;
-  margin: 0 10px;
-}
-
-.toolbar-divider.inline {
-  margin: 0 6px;
-}
-
-:deep(.toolbar-btn) {
-  background: none !important;
-  border: none !important;
-  color: #a1a1aa !important;
-  border-radius: 6px !important;
-  width: 32px !important;
-  height: 32px !important;
-  padding: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-:deep(.toolbar-btn:hover) {
-  background-color: #18181b !important;
-  color: #fafafa !important;
-}
-
-:deep(.toolbar-btn.text-red-hover:hover) {
-  color: #ef4444 !important;
-}
-
-/* Message Meta block */
-.reading-meta-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #27272a;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  text-align: left;
-  flex-shrink: 0;
-}
-
-.meta-left {
-  display: flex;
-  gap: 16px;
-}
-
-.avatar-initials-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #27272a;
-  color: #fafafa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.meta-sender-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sender-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-}
-
-.subject-subtitle {
-  font-size: 13px;
-  color: #fafafa;
-  margin: 0;
-}
-
-.reply-to-line {
-  font-size: 12px;
-  color: #a1a1aa;
-  margin: 0;
-}
-
-.meta-right {
-  font-size: 12px;
-  color: #71717a;
-}
-
-/* Attachments Panel */
-.attachments-panel {
-  padding: 12px 24px;
-  background-color: #09090b;
-  border-bottom: 1px solid #27272a;
-  text-align: left;
-  flex-shrink: 0;
-}
-
-.attachments-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #a1a1aa;
-  margin-bottom: 8px;
-}
-
-.attachments-flex-list {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.att-card {
-  background-color: #18181b;
-  border: 1px solid #27272a;
-  border-radius: 6px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.att-card:hover {
-  border-color: #3f3f46;
-}
-
-.att-card i.pi-file-pdf {
-  color: #ef4444;
-  font-size: 18px;
-}
-
-.att-meta {
-  display: flex;
-  flex-direction: column;
-}
-
-.att-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #fafafa;
-}
-
-.att-size {
-  font-size: 10px;
-  color: #71717a;
-}
-
-.download-hover {
-  color: #71717a;
-  font-size: 12px;
-  margin-left: 6px;
-}
-
-.att-card:hover .download-hover {
-  color: #fafafa;
-}
-
-/* Scrollable Iframe Panel */
-.reading-body-scrollable {
-  flex-grow: 1;
-  position: relative;
-  background-color: #ffffff; /* White background inside reading body for clean email rendering */
-}
-
-.mail-display-iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* Quick Reply Section at Bottom */
-.quick-reply-section {
-  border-top: 1px solid #27272a;
-  padding: 16px 24px;
-  background-color: #09090b;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.quick-reply-textarea {
-  width: 100%;
-  background-color: #09090b;
-  border: 1px solid #27272a;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 13px;
-  color: #fafafa;
-  font-family: inherit;
-  resize: none;
-  box-sizing: border-box;
-}
-
-.quick-reply-textarea:focus {
-  outline: none;
-  border-color: #3f3f46;
-}
-
-.quick-reply-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.mute-thread-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mute-label {
-  font-size: 12px;
-  color: #71717a;
-  cursor: pointer;
-}
-
-.send-reply-btn {
-  background-color: #fafafa !important;
-  color: #09090b !important;
-  border: none !important;
-  font-weight: 600 !important;
-}
-
-.send-reply-btn:hover {
-  background-color: #e4e4e7 !important;
-}
-
-/* Compose form fields inside dialog */
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 10px 0;
-  text-align: left;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #e4e4e7;
-}
-
-.text-area {
-  border: 1px solid #27272a;
-  background-color: #18181b;
-  color: #fafafa;
-  border-radius: 6px;
-  padding: 10px;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.text-area:focus {
-  outline: none;
-  border-color: #3f3f46;
-}
-
-:deep(.p-dialog) {
-  background-color: #09090b !important;
-  border: 1px solid #27272a !important;
-  color: #fafafa !important;
-}
-
-:deep(.p-dialog-header) {
-  background-color: #09090b !important;
-  border-bottom: 1px solid #27272a !important;
-  color: #fafafa !important;
-}
-
-:deep(.p-dialog-content) {
-  background-color: #09090b !important;
-  color: #fafafa !important;
-}
-
-:deep(.p-dialog-footer) {
-  background-color: #09090b !important;
-  border-top: 1px solid #27272a !important;
-}
-
-.brand-btn {
-  background-color: #fafafa !important;
-  color: #09090b !important;
-  border: none !important;
-  font-weight: 600 !important;
-}
-
-.brand-btn:hover {
-  background-color: #e4e4e7 !important;
 }
 </style>

@@ -1,282 +1,395 @@
 <template>
-  <div class="accounts-page">
+  <div class="space-y-6">
     <!-- Header with Actions -->
-    <div class="action-bar">
-      <div class="search-container">
-        <span class="p-input-icon-left">
-          <i class="pi pi-search" />
-          <input-text v-model="searchQuery" placeholder="Search accounts..." class="p-inputtext-sm search-input" />
-        </span>
-      </div>
-
-      <div class="btn-group">
-        <Button 
-          label="Single Account" 
-          icon="pi pi-user-plus" 
-          class="p-button-outlined p-button-sm" 
-          @click="openSingleCreateDialog" 
-        />
-        <Button 
-          label="Bulk Create" 
-          icon="pi pi-users" 
-          class="p-button-sm brand-btn" 
-          @click="openBulkCreateDialog" 
-        />
-        <Button 
-          label="Export All" 
-          icon="pi pi-download" 
-          class="p-button-outlined p-button-secondary p-button-sm" 
-          @click="openExportDialog" 
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="relative max-w-xs flex-1">
+        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <Input 
+          v-model="searchQuery" 
+          placeholder="Search accounts..." 
+          class="h-10 pl-9 border-border bg-zinc-900/50 text-white placeholder-zinc-500" 
         />
       </div>
-    </div>
 
-    <!-- Accounts Data Table -->
-    <div class="table-card">
-      <data-table 
-        :value="filteredAccounts" 
-        paginator 
-        :rows="10" 
-        responsive-layout="scroll" 
-        class="p-datatable-sm"
-        v-model:selection="selectedAccounts"
-        data-key="id"
-      >
-        <column selection-mode="multiple" header-style="width: 3rem"></column>
-        
-        <column field="email" header="Email Address" sortable></column>
-        
-        <column field="creationDate" header="Created On" sortable>
-          <template #body="slotProps">
-            {{ formatDateTime(slotProps.data.creationDate) }}
-          </template>
-        </column>
-        
-        <column field="mailCount" header="Mailbox" sortable>
-          <template #body="slotProps">
-            <span class="mailbox-badge">{{ slotProps.data.mailCount }} mails</span>
-          </template>
-        </column>
-
-        <column field="status" header="Status" sortable>
-          <template #body="slotProps">
-            <badge 
-              :value="slotProps.data.status" 
-              :severity="slotProps.data.status === 'Active' ? 'success' : 'danger'" 
-            />
-          </template>
-        </column>
-
-        <column header="Actions" header-style="width: 250px; text-align: center" body-style="text-align: center">
-          <template #body="slotProps">
-            <div class="action-buttons">
-              <!-- Open Webmail -->
-              <Button 
-                icon="pi pi-envelope" 
-                class="p-button-rounded p-button-text p-button-sm" 
-                v-tooltip.top="'Open Webmail'"
-                @click="openWebmail(slotProps.data.email)"
-              />
-              <!-- View details -->
-              <Button 
-                icon="pi pi-eye" 
-                class="p-button-rounded p-button-text p-button-info p-button-sm" 
-                v-tooltip.top="'View Details'"
-                @click="viewDetails(slotProps.data)"
-              />
-              <!-- Copy credentials -->
-              <Button 
-                icon="pi pi-copy" 
-                class="p-button-rounded p-button-text p-button-warning p-button-sm" 
-                v-tooltip.top="'Copy Credentials'"
-                @click="copyCredentials(slotProps.data)"
-              />
-              <!-- Delete account -->
-              <Button 
-                icon="pi pi-trash" 
-                class="p-button-rounded p-button-text p-button-danger p-button-sm" 
-                v-tooltip.top="'Delete Account'"
-                @click="confirmDelete(slotProps.data)"
-              />
-            </div>
-          </template>
-        </column>
-      </data-table>
-
-      <!-- Bulk action footer -->
-      <div v-if="selectedAccounts.length > 0" class="bulk-footer">
-        <span>Selected: <strong>{{ selectedAccounts.length }}</strong> accounts</span>
-        <div class="bulk-buttons">
-          <Button 
-            label="Export Selected" 
-            icon="pi pi-download" 
-            class="p-button-outlined p-button-secondary p-button-sm"
-            @click="exportSelected" 
-          />
-          <Button 
-            label="Delete Selected" 
-            icon="pi pi-trash" 
-            class="p-button-danger p-button-sm"
-            @click="deleteSelected" 
-          />
-        </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <Button 
+          variant="outline" 
+          class="h-10 border-border text-zinc-300 hover:bg-zinc-800 hover:text-white gap-2" 
+          @click="openSingleCreateDialog"
+        >
+          <UserPlus class="h-4 w-4" />
+          Single Account
+        </Button>
+        <Button 
+          class="h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2" 
+          @click="openBulkCreateDialog"
+        >
+          <Users class="h-4 w-4" />
+          Bulk Create
+        </Button>
+        <Button 
+          variant="outline" 
+          class="h-10 border-border text-zinc-300 hover:bg-zinc-800 hover:text-white gap-2" 
+          @click="openExportDialog"
+        >
+          <Download class="h-4 w-4" />
+          Export All
+        </Button>
       </div>
     </div>
 
-    <!-- Create Single Account Dialog -->
-    <p-dialog v-model:visible="isSingleCreateOpen" header="Create Single Account" modal :style="{ width: '400px' }">
-      <div class="form-fields">
-        <div class="field">
-          <label for="new-email">Email Prefix</label>
-          <div class="p-inputgroup">
-            <input-text id="new-email" v-model="singleAccount.prefix" placeholder="username" />
-            <span class="p-inputgroup-addon">@codeflai.tech</span>
+    <!-- Accounts Data Table Card -->
+    <Card class="border-border bg-card">
+      <CardContent class="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow class="hover:bg-transparent">
+              <TableHead class="w-12 text-center">
+                <input 
+                  type="checkbox" 
+                  :checked="areAllSelected" 
+                  @change="toggleSelectAll" 
+                  class="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-primary focus:ring-primary"
+                />
+              </TableHead>
+              <TableHead class="text-zinc-400 font-medium text-xs">Email Address</TableHead>
+              <TableHead class="text-zinc-400 font-medium text-xs">Created On</TableHead>
+              <TableHead class="text-zinc-400 font-medium text-xs">Mailbox</TableHead>
+              <TableHead class="text-zinc-400 font-medium text-xs">Status</TableHead>
+              <TableHead class="text-right text-zinc-400 font-medium text-xs pr-6">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="account in filteredAccounts" :key="account.id" class="border-border/50 hover:bg-zinc-800/30">
+              <TableCell class="text-center py-3">
+                <input 
+                  type="checkbox" 
+                  :value="account" 
+                  v-model="selectedAccounts" 
+                  class="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-primary focus:ring-primary"
+                />
+              </TableCell>
+              <TableCell class="text-sm font-medium text-zinc-100 py-3">{{ account.email }}</TableCell>
+              <TableCell class="text-sm text-zinc-400 py-3">{{ formatDateTime(account.creationDate) }}</TableCell>
+              <TableCell class="py-3">
+                <Badge variant="outline" class="text-xs border-zinc-800 text-zinc-300 bg-zinc-900/30">
+                  {{ account.mailCount }} mails
+                </Badge>
+              </TableCell>
+              <TableCell class="py-3">
+                <Badge :variant="account.status === 'Active' ? 'default' : 'destructive'" class="text-xs">
+                  {{ account.status }}
+                </Badge>
+              </TableCell>
+              <TableCell class="text-right py-3 pr-6">
+                <div class="inline-flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    class="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    @click="openWebmail(account.email)"
+                    title="Open Webmail"
+                  >
+                    <Mail class="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    class="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    @click="viewDetails(account)"
+                    title="View Details"
+                  >
+                    <Eye class="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    class="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    @click="copyCredentials(account)"
+                    title="Copy Credentials"
+                  >
+                    <Copy class="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    class="h-8 w-8 text-zinc-400 hover:text-red-400 hover:bg-red-950/20"
+                    @click="confirmDelete(account)"
+                    title="Delete Account"
+                  >
+                    <Trash class="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+            <TableRow v-if="filteredAccounts.length === 0">
+              <TableCell colspan="6" class="text-center text-zinc-500 py-12">
+                No accounts match the search criteria.
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+
+        <!-- Bulk Action Actionbar -->
+        <div v-if="selectedAccounts.length > 0" class="flex items-center justify-between border-t border-border px-6 py-4 bg-zinc-900/20">
+          <span class="text-xs text-zinc-400">Selected <strong class="text-white">{{ selectedAccounts.length }}</strong> accounts</span>
+          <div class="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              class="h-9 text-xs border-border hover:bg-zinc-800 text-zinc-300 gap-1.5" 
+              @click="exportSelected"
+            >
+              <Download class="h-3.5 w-3.5" />
+              Export Selected
+            </Button>
+            <Button 
+              variant="destructive" 
+              class="h-9 text-xs gap-1.5" 
+              @click="deleteSelected"
+            >
+              <Trash class="h-3.5 w-3.5" />
+              Delete Selected
+            </Button>
           </div>
         </div>
-        
-        <div class="field">
-          <label for="new-password">Password</label>
-          <password id="new-password" v-model="singleAccount.password" toggle-mask :feedback="false" class="w-full" input-class="w-full" />
+      </CardContent>
+    </Card>
+
+    <!-- Create Single Account Dialog -->
+    <Dialog v-model:open="isSingleCreateOpen">
+      <DialogContent class="sm:max-w-md border-border bg-card text-white">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-semibold text-white">Create Single Account</DialogTitle>
+          <DialogDescription class="text-xs text-zinc-400">
+            Set a new email username and password.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div class="space-y-2">
+            <Label for="new-email" class="text-xs text-zinc-300">Email Address</Label>
+            <div class="flex">
+              <Input 
+                id="new-email" 
+                v-model="singleAccount.prefix" 
+                placeholder="username" 
+                class="rounded-r-none border-r-0 border-border bg-zinc-900/50 text-white placeholder-zinc-500 focus:ring-1 focus:ring-primary focus:border-primary" 
+              />
+              <span class="inline-flex items-center px-3 border border-border bg-zinc-950 text-xs text-zinc-400 font-medium rounded-r-md select-none border-l-0">
+                @codeflai.tech
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="new-password" class="text-xs text-zinc-300">Password</Label>
+            <Input 
+              id="new-password" 
+              type="password" 
+              v-model="singleAccount.password" 
+              placeholder="Leave blank to auto-generate" 
+              class="border-border bg-zinc-900/50 text-white placeholder-zinc-500 focus:ring-1 focus:ring-primary focus:border-primary" 
+            />
+          </div>
         </div>
-      </div>
-      
-      <template #footer>
-        <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isSingleCreateOpen = false" />
-        <Button label="Create" icon="pi pi-check" class="brand-btn" @click="handleCreateSingle" />
-      </template>
-    </p-dialog>
+
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="ghost" class="hover:bg-zinc-800 text-zinc-400 hover:text-white" @click="isSingleCreateOpen = false">
+            Cancel
+          </Button>
+          <Button class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" @click="handleCreateSingle">
+            Create Account
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Bulk Create Accounts Dialog -->
-    <p-dialog v-model:visible="isBulkCreateOpen" header="Bulk Create Accounts" modal :style="{ width: '600px' }">
-      <div class="bulk-container">
-        <div class="steps-progress" v-if="bulkStep === 2">
-          <h3>Step 2: Preview Generated Accounts</h3>
-        </div>
-        
+    <Dialog v-model:open="isBulkCreateOpen">
+      <DialogContent class="sm:max-w-lg border-border bg-card text-white">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-semibold text-white">
+            Bulk Create Accounts
+          </DialogTitle>
+          <DialogDescription class="text-xs text-zinc-400">
+            Create multiple inboxes simultaneously.
+          </DialogDescription>
+        </DialogHeader>
+
         <!-- Step 1: Input details -->
-        <div v-if="bulkStep === 1" class="form-fields">
-          <div class="field">
-            <label for="bulk-names">Email Addresses (one per line, without domain)</label>
+        <div v-if="bulkStep === 1" class="space-y-4 py-4">
+          <div class="space-y-2">
+            <Label for="bulk-names" class="text-xs text-zinc-300">Usernames (one per line, without domain)</Label>
             <textarea 
               id="bulk-names" 
               v-model="bulkInput.names" 
               rows="6" 
-              placeholder="alex&#10;john&#10;support&#10;developer"
-              class="w-full text-area"
+              placeholder="alex&#10;john&#10;support"
+              class="flex min-h-[120px] w-full rounded-md border border-border bg-zinc-900/50 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <small class="help-text">Enter usernames only. We will append <strong>@codeflai.tech</strong>.</small>
+            <p class="text-[10px] text-zinc-400">Appends <strong>@codeflai.tech</strong> automatically to each line.</p>
           </div>
 
-          <div class="field-row">
-            <div class="field flex-1">
-              <label for="bulk-pass-mode">Password Option</label>
-              <dropdown 
-                id="bulk-pass-mode" 
-                v-model="bulkInput.passwordMode" 
-                :options="passwordModes" 
-                option-label="label" 
-                option-value="value"
-                class="w-full"
-              />
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="bulk-pass-mode" class="text-xs text-zinc-300">Password Option</Label>
+              <Select v-model="bulkInput.passwordMode">
+                <SelectTrigger id="bulk-pass-mode" class="border-border bg-zinc-900/50 text-white">
+                  <SelectValue placeholder="Select password option" />
+                </SelectTrigger>
+                <SelectContent class="border-border bg-zinc-900 text-white">
+                  <SelectItem value="auto">Auto-Generate Passwords</SelectItem>
+                  <SelectItem value="custom">Use Custom Password</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            <div class="field flex-1" v-if="bulkInput.passwordMode === 'custom'">
-              <label for="bulk-pass">Custom Password</label>
-              <password id="bulk-pass" v-model="bulkInput.customPassword" toggle-mask :feedback="false" class="w-full" input-class="w-full" />
+
+            <div class="space-y-2" v-if="bulkInput.passwordMode === 'custom'">
+              <Label for="bulk-pass" class="text-xs text-zinc-300">Custom Password</Label>
+              <Input 
+                id="bulk-pass" 
+                type="password" 
+                v-model="bulkInput.customPassword" 
+                placeholder="Common password" 
+                class="border-border bg-zinc-900/50 text-white placeholder-zinc-500" 
+              />
             </div>
           </div>
         </div>
 
         <!-- Step 2: Preview generated profiles -->
-        <div v-if="bulkStep === 2" class="preview-container">
-          <p class="preview-desc">Review the accounts and auto-generated passwords before final creation.</p>
-          <data-table :value="bulkPreviewList" class="p-datatable-sm" scrollable scroll-height="250px">
-            <column field="email" header="Email"></column>
-            <column field="password" header="Password"></column>
-          </data-table>
-          
-          <div v-if="bulkValidationErrors.length > 0" class="validation-warning">
-            <h4>Warnings / Errors found:</h4>
-            <ul>
+        <div v-if="bulkStep === 2" class="space-y-4 py-4">
+          <p class="text-xs text-zinc-400">Review the accounts and auto-generated passwords before confirming.</p>
+          <div class="max-h-60 overflow-y-auto border border-border rounded-lg bg-zinc-950">
+            <Table>
+              <TableHeader>
+                <TableRow class="hover:bg-transparent">
+                  <TableHead class="text-zinc-400 font-medium text-xs py-2">Email Address</TableHead>
+                  <TableHead class="text-zinc-400 font-medium text-xs py-2">Generated Password</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="(preview, idx) in bulkPreviewList" :key="idx" class="border-border/50">
+                  <TableCell class="text-xs text-zinc-100 py-2">{{ preview.email }}</TableCell>
+                  <TableCell class="text-xs font-mono text-zinc-300 py-2">{{ preview.password }}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          <div v-if="bulkValidationErrors.length > 0" class="rounded-lg border border-yellow-900/30 bg-yellow-950/20 px-3 py-2 text-[11px] text-yellow-400">
+            <p class="font-semibold mb-1">Warnings / Errors:</p>
+            <ul class="list-disc pl-4 space-y-0.5">
               <li v-for="(err, idx) in bulkValidationErrors" :key="idx">{{ err }}</li>
             </ul>
           </div>
         </div>
-      </div>
 
-      <template #footer>
-        <!-- Step 1 Actions -->
-        <div v-if="bulkStep === 1" class="dialog-foot">
-          <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isBulkCreateOpen = false" />
-          <Button label="Next: Preview" icon="pi pi-angle-right" class="brand-btn" @click="generateBulkPreview" />
-        </div>
-        <!-- Step 2 Actions -->
-        <div v-if="bulkStep === 2" class="dialog-foot">
-          <Button label="Back" icon="pi pi-angle-left" class="p-button-text p-button-secondary" @click="bulkStep = 1" />
-          <Button label="Confirm & Create" icon="pi pi-check" class="brand-btn" :loading="isBulkSubmitting" @click="handleConfirmBulkCreate" />
-        </div>
-      </template>
-    </p-dialog>
+        <DialogFooter class="gap-2 sm:gap-0">
+          <div v-if="bulkStep === 1" class="flex w-full justify-end gap-2">
+            <Button variant="ghost" class="hover:bg-zinc-800 text-zinc-400 hover:text-white" @click="isBulkCreateOpen = false">
+              Cancel
+            </Button>
+            <Button class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" @click="generateBulkPreview">
+              Preview Accounts
+            </Button>
+          </div>
+          <div v-if="bulkStep === 2" class="flex w-full justify-between gap-2">
+            <Button variant="ghost" class="hover:bg-zinc-800 text-zinc-400 hover:text-white" @click="bulkStep = 1">
+              Back
+            </Button>
+            <Button class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" :disabled="isBulkSubmitting" @click="handleConfirmBulkCreate">
+              <span v-if="isBulkSubmitting">Creating...</span>
+              <span v-else>Confirm & Create</span>
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Account Details Dialog -->
-    <p-dialog v-model:visible="isDetailsOpen" header="Account Details" modal :style="{ width: '450px' }">
-      <div v-if="selectedDetailAccount" class="details-list">
-        <div class="detail-row">
-          <span class="label">Email Address:</span>
-          <span class="value font-semibold">{{ selectedDetailAccount.email }}</span>
+    <Dialog v-model:open="isDetailsOpen">
+      <DialogContent class="sm:max-w-md border-border bg-card text-white">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-semibold text-white">Account Details</DialogTitle>
+        </DialogHeader>
+
+        <div v-if="selectedDetailAccount" class="divide-y divide-border text-sm">
+          <div class="flex justify-between py-2.5">
+            <span class="text-zinc-400">Email Address:</span>
+            <span class="font-medium text-white">{{ selectedDetailAccount.email }}</span>
+          </div>
+          <div class="flex justify-between py-2.5">
+            <span class="text-zinc-400">Password:</span>
+            <span class="font-mono bg-zinc-950 px-2 py-0.5 rounded text-xs text-primary border border-border">{{ selectedDetailAccount.password }}</span>
+          </div>
+          <div class="flex justify-between py-2.5">
+            <span class="text-zinc-400">Status:</span>
+            <Badge :variant="selectedDetailAccount.status === 'Active' ? 'default' : 'destructive'" class="text-xs">
+              {{ selectedDetailAccount.status }}
+            </Badge>
+          </div>
+          <div class="flex justify-between py-2.5">
+            <span class="text-zinc-400">Created Date:</span>
+            <span class="text-zinc-300">{{ formatDateTime(selectedDetailAccount.creationDate) }}</span>
+          </div>
+          <div class="flex justify-between py-2.5">
+            <span class="text-zinc-400">Emails Received:</span>
+            <span class="text-zinc-300 font-medium">{{ selectedDetailAccount.mailCount }}</span>
+          </div>
+          <div class="flex justify-between py-2.5">
+            <span class="text-zinc-400">Emails Sent:</span>
+            <span class="text-zinc-300 font-medium">{{ selectedDetailAccount.sendCount || 0 }}</span>
+          </div>
         </div>
-        <div class="detail-row">
-          <span class="label">Password:</span>
-          <span class="value font-mono bg-light">{{ selectedDetailAccount.password }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Status:</span>
-          <badge 
-            :value="selectedDetailAccount.status" 
-            :severity="selectedDetailAccount.status === 'Active' ? 'success' : 'danger'" 
-          />
-        </div>
-        <div class="detail-row">
-          <span class="label">Created Date:</span>
-          <span class="value">{{ formatDateTime(selectedDetailAccount.creationDate) }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Emails Received:</span>
-          <span class="value">{{ selectedDetailAccount.mailCount }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Emails Sent:</span>
-          <span class="value">{{ selectedDetailAccount.sendCount }}</span>
-        </div>
-      </div>
-      <template #footer>
-        <Button label="Close" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isDetailsOpen = false" />
-        <Button label="Login to Webmail" icon="pi pi-envelope" class="brand-btn" @click="openWebmail(selectedDetailAccount?.email)" />
-      </template>
-    </p-dialog>
+
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="ghost" class="hover:bg-zinc-800 text-zinc-400 hover:text-white" @click="isDetailsOpen = false">
+            Close
+          </Button>
+          <Button class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" @click="openWebmail(selectedDetailAccount?.email)">
+            Login to Webmail
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- Export Dialog -->
-    <p-dialog v-model:visible="isExportOpen" header="Export Accounts" modal :style="{ width: '400px' }">
-      <div class="form-fields">
-        <div class="field">
-          <label>Choose Export Format</label>
-          <div class="radio-group">
-            <div class="radio-item">
-              <input type="radio" id="fmt-txt" value="txt" v-model="exportFormat" />
-              <label for="fmt-txt">Plain Text (email:password)</label>
-            </div>
-            <div class="radio-item">
-              <input type="radio" id="fmt-csv" value="csv" v-model="exportFormat" />
-              <label for="fmt-csv">CSV Format (Comma-separated)</label>
+    <Dialog v-model:open="isExportOpen">
+      <DialogContent class="sm:max-w-md border-border bg-card text-white">
+        <DialogHeader>
+          <DialogTitle class="text-lg font-semibold text-white">Export Accounts</DialogTitle>
+          <DialogDescription class="text-xs text-zinc-400">
+            Choose format to download the accounts.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div class="space-y-3">
+            <Label class="text-xs text-zinc-300">Export Format</Label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 text-sm text-zinc-200 cursor-pointer select-none">
+                <input type="radio" value="txt" v-model="exportFormat" class="h-4 w-4 border-zinc-700 bg-zinc-900 text-primary focus:ring-primary" />
+                Plain Text (email:password)
+              </label>
+              <label class="flex items-center gap-2 text-sm text-zinc-200 cursor-pointer select-none">
+                <input type="radio" value="csv" v-model="exportFormat" class="h-4 w-4 border-zinc-700 bg-zinc-900 text-primary focus:ring-primary" />
+                CSV Format (Comma-separated)
+              </label>
             </div>
           </div>
         </div>
-      </div>
-      <template #footer>
-        <Button label="Cancel" icon="pi pi-times" class="p-button-text p-button-secondary" @click="isExportOpen = false" />
-        <Button label="Export" icon="pi pi-download" class="brand-btn" @click="triggerExport" />
-      </template>
-    </p-dialog>
+
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="ghost" class="hover:bg-zinc-800 text-zinc-400 hover:text-white" @click="isExportOpen = false">
+            Cancel
+          </Button>
+          <Button class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" @click="triggerExport">
+            Export
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -284,6 +397,15 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { accountService } from '../services/accountService'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Search, UserPlus, Users, Download, Eye, Copy, Trash, Mail } from 'lucide-vue-next'
 
 const router = useRouter()
 
@@ -308,18 +430,13 @@ const selectedDetailAccount = ref(null)
 const exportFormat = ref('txt')
 const currentExportIds = ref(null) // null means export all
 
-const passwordModes = [
-  { label: 'Auto-Generate Passwords', value: 'auto' },
-  { label: 'Use Custom Password', value: 'custom' }
-]
+const loadAccounts = () => {
+  accounts.value = accountService.getAccounts()
+}
 
 onMounted(() => {
   loadAccounts()
 })
-
-const loadAccounts = () => {
-  accounts.value = accountService.getAccounts()
-}
 
 const filteredAccounts = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -338,6 +455,18 @@ const formatDateTime = (isoString) => {
     minute: '2-digit'
   })
 }
+
+const toggleSelectAll = (e) => {
+  if (e.target.checked) {
+    selectedAccounts.value = [...filteredAccounts.value]
+  } else {
+    selectedAccounts.value = []
+  }
+}
+
+const areAllSelected = computed(() => {
+  return filteredAccounts.value.length > 0 && selectedAccounts.value.length === filteredAccounts.value.length
+})
 
 // Action button triggers
 const openWebmail = (email) => {
@@ -489,236 +618,3 @@ const deleteSelected = () => {
   }
 }
 </script>
-
-<style scoped>
-.accounts-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.action-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.search-input {
-  width: 280px;
-}
-
-.btn-group {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.brand-btn {
-  background-color: #0ea5e9;
-  border-color: #0ea5e9;
-}
-.brand-btn:hover {
-  background-color: #0284c7 !important;
-  border-color: #0284c7 !important;
-}
-
-.table-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.mailbox-badge {
-  background-color: #f1f5f9;
-  color: #475569;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-}
-
-.bulk-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-top: 15px;
-}
-
-.bulk-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-/* Dialog Styling */
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 10px 0;
-  text-align: left;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-}
-
-.field-row {
-  display: flex;
-  gap: 15px;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.text-area {
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 10px;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.help-text {
-  font-size: 12px;
-  color: #64748b;
-  text-align: left;
-}
-
-/* Bulk Preview styling */
-.preview-container {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  text-align: left;
-}
-
-.preview-desc {
-  font-size: 14px;
-  color: #475569;
-  margin: 0;
-}
-
-.validation-warning {
-  background-color: #fffbeb;
-  border: 1px solid #fef3c7;
-  border-radius: 8px;
-  padding: 12px 16px;
-  color: #b45309;
-}
-
-.validation-warning h4 {
-  margin: 0 0 6px 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.validation-warning ul {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-}
-
-/* Detail list styling */
-.details-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 10px 0;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 10px;
-  font-size: 14px;
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.detail-row .label {
-  color: #64748b;
-  font-weight: 500;
-}
-
-.detail-row .value {
-  color: #1e293b;
-}
-
-.font-semibold {
-  font-weight: 600;
-}
-
-.font-mono {
-  font-family: monospace;
-  font-size: 13px;
-}
-
-.bg-light {
-  background-color: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.dialog-foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  width: 100%;
-}
-
-.radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 5px;
-}
-
-.radio-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.radio-item label {
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.radio-item input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-</style>

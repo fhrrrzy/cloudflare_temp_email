@@ -8,6 +8,10 @@
     "lib": [
       "ESNext"
     ],
-    "types": []
-  },
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
 }

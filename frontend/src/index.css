@@ -1,84 +1,42 @@
-/* Design System Tokens: Zinc & Emerald (Dark Mode Only) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tw-animate-css";
+@import "shadcn-vue/tailwind.css";
 
-:root {
-  /* Brand Primary Accent: Emerald Green */
-  --primary-color: oklch(0.68 0.17 154);      /* Vibrant emerald */
-  --primary-hover: oklch(0.62 0.16 154);      /* Slightly darker hover */
-  --primary-active: oklch(0.55 0.14 154);     /* Active state */
-  --primary-tint: rgba(16, 185, 129, 0.15);   /* Emerald green glow tint */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  /* Neutral Zinc Palette */
-  --zinc-50: oklch(0.98 0.002 240);
-  --zinc-100: oklch(0.92 0.002 240);
-  --zinc-200: oklch(0.84 0.002 240);
-  --zinc-300: oklch(0.71 0.002 240);
-  --zinc-400: oklch(0.57 0.002 240);          /* Secondary labels */
-  --zinc-500: oklch(0.44 0.002 240);
-  --zinc-600: oklch(0.32 0.002 240);
-  --zinc-700: oklch(0.23 0.002 240);          /* Divider / borders */
-  --zinc-800: oklch(0.16 0.002 240);          /* Input bg */
-  --zinc-900: oklch(0.12 0.002 240);          /* Card bg / sidebar */
-  --zinc-950: oklch(0.09 0.002 240);          /* Body bg */
+@layer base {
+  :root {
+    --background: oklch(0.09 0.002 240);       /* zinc-950 background */
+    --foreground: oklch(0.98 0.002 240);       /* zinc-50 text */
+    --card: oklch(0.12 0.002 240);             /* zinc-900 background */
+    --card-foreground: oklch(0.98 0.002 240);
+    --popover: oklch(0.12 0.002 240);
+    --popover-foreground: oklch(0.98 0.002 240);
+    --primary: oklch(0.68 0.17 154);           /* emerald-500 primary */
+    --primary-foreground: oklch(0.09 0.002 240); /* zinc-950 high contrast text */
+    --secondary: oklch(0.16 0.002 240);         /* zinc-800 button bg */
+    --secondary-foreground: oklch(0.98 0.002 240);
+    --muted: oklch(0.16 0.002 240);
+    --muted-foreground: oklch(0.57 0.002 240);  /* zinc-400 secondary text */
+    --accent: oklch(0.16 0.002 240);
+    --accent-foreground: oklch(0.98 0.002 240);
+    --destructive: oklch(0.60 0.18 29);         /* custom dark red */
+    --destructive-foreground: oklch(0.98 0.002 240);
+    --border: oklch(0.16 0.002 240);            /* zinc-800 borders */
+    --input: oklch(0.16 0.002 240);
+    --ring: oklch(0.68 0.17 154);               /* emerald-500 ring */
+    --radius: 0.375rem;                         /* Sleek 6px compact rounded corners */
+  }
 
-  /* Semantic Variables (Dark theme only) */
-  --bg-app: var(--zinc-950);
-  --bg-card: var(--zinc-900);
-  --bg-sidebar: var(--zinc-900);
-  --border-color: var(--zinc-800);
-  --text-primary: #ffffff;
-  --text-secondary: var(--zinc-400);
-
-  /* Animation and Transition */
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Base resets & typography */
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-app);
-  color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Custom override styles for resolved PrimeVue components to match our custom properties */
-.p-button.form-submit-btn,
-.p-button.brand-btn,
-.p-button.brand-button,
-.p-button.p-button-primary {
-  background-color: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
-  color: var(--zinc-950) !important; /* High contrast dark text on emerald */
-  font-weight: 600 !important;
-  transition: all var(--transition-fast) !important;
-}
-
-.p-button.form-submit-btn:hover,
-.p-button.brand-btn:hover,
-.p-button.brand-button:hover,
-.p-button.p-button-primary:hover {
-  background-color: var(--primary-hover) !important;
-  border-color: var(--primary-hover) !important;
-}
-
-/* Custom compact table designs */
-.p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
-  background-color: var(--zinc-900) !important;
-  color: var(--text-primary) !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  font-size: 13px;
-}
-
-.p-datatable.p-datatable-sm .p-datatable-tbody > tr {
-  background-color: var(--zinc-950) !important;
-  color: var(--text-primary) !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  font-size: 13px;
-}
-
-.p-datatable.p-datatable-sm .p-datatable-tbody > tr:hover {
-  background-color: var(--zinc-800) !important;
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
