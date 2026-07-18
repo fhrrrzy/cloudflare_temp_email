@@ -5,8 +5,9 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-import { NaiveUiResolver, PrimeVueResolver } from 'unplugin-vue-components/resolvers'
-import wasm from "vite-plugin-wasm";
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import wasm from "vite-plugin-wasm"
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,6 +16,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    tailwindcss(),
     wasm(),
     AutoImport({
       imports: [
@@ -32,8 +34,7 @@ export default defineConfig({
     }),
     Components({
       resolvers: [
-        NaiveUiResolver(),
-        PrimeVueResolver()
+        NaiveUiResolver()
       ]
     }),
     VitePWA({
