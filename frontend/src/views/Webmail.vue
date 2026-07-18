@@ -1,85 +1,9 @@
 <template>
   <div class="webmail-dark-container border border-border rounded-lg bg-card text-white overflow-hidden shadow-2xl">
-    <!-- 1. LEFT SIDEBAR: Accounts & Folders/Categories -->
-    <div class="webmail-left-sidebar flex flex-col border-r border-border bg-zinc-950/40">
-      <!-- Account Selection Dropdown -->
-      <div class="account-header p-4 border-b border-border">
-        <Select v-model="selectedEmailAddress" @update:model-value="onMailboxChange">
-          <SelectTrigger class="w-full border-border bg-zinc-900 text-white flex items-center justify-between">
-            <SelectValue placeholder="Select an account" />
-          </SelectTrigger>
-          <SelectContent class="border-border bg-zinc-900 text-white">
-            <SelectItem v-for="email in accountEmails" :key="email" :value="email">
-              {{ getAccountDisplayName(email) }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <!-- Main Folders Menu -->
-      <div class="menu-section p-3 space-y-1">
-        <div 
-          v-for="folder in mainFolders" 
-          :key="folder.id" 
-          class="menu-item flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors" 
-          :class="currentFolder === folder.id ? 'bg-primary text-primary-foreground' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40'"
-          @click="selectFolder(folder.id)"
-        >
-          <div class="item-left flex items-center gap-3">
-            <component :is="getIconComponent(folder.icon)" class="h-4 w-4 shrink-0" />
-            <span>{{ folder.name }}</span>
-          </div>
-          <span 
-            v-if="getFolderCount(folder.id) > 0" 
-            class="px-1.5 py-0.5 rounded text-[10px]"
-            :class="currentFolder === folder.id ? 'bg-primary-foreground text-primary' : 'bg-zinc-800 text-zinc-300'"
-          >
-            {{ getFolderCount(folder.id) }}
-          </span>
-        </div>
-      </div>
-
-      <div class="border-t border-border my-2"></div>
-
-      <!-- Categories Menu -->
-      <div class="menu-section p-3 space-y-1 flex-grow">
-        <div 
-          v-for="cat in categoryFolders" 
-          :key="cat.id" 
-          class="menu-item flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors" 
-          :class="currentFolder === cat.id ? 'bg-primary text-primary-foreground' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40'"
-          @click="selectFolder(cat.id)"
-        >
-          <div class="item-left flex items-center gap-3">
-            <component :is="getIconComponent(cat.icon)" class="h-4 w-4 shrink-0" />
-            <span>{{ cat.name }}</span>
-          </div>
-          <span 
-            v-if="getCategoryCount(cat.id) > 0" 
-            class="px-1.5 py-0.5 rounded text-[10px]"
-            :class="currentFolder === cat.id ? 'bg-primary-foreground text-primary' : 'bg-zinc-800 text-zinc-300'"
-          >
-            {{ getCategoryCount(cat.id) }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Bottom Compose Button -->
-      <div class="sidebar-compose-footer p-4 border-t border-border bg-zinc-950/20">
-        <Button 
-          class="w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2" 
-          @click="openComposeDialog"
-        >
-          <Pencil class="h-4 w-4" />
-          Compose Mail
-        </Button>
-      </div>
-    </div>
-
-    <!-- 2. MIDDLE COLUMN: Emails List -->
-    <div class="webmail-middle-column flex flex-col border-r border-border">
+    <!-- 1. EMAILS LIST COLUMN -->
+    <div class="webmail-middle-column flex flex-col border-r border-border bg-zinc-950/20">
       <!-- Title & Mail Filters Header -->
-      <div class="middle-column-header p-4 border-b border-border flex items-center justify-between">
+      <div class="middle-column-header p-4 border-b border-border flex items-center justify-between bg-zinc-950/20">
         <h2 class="folder-title text-sm font-semibold text-white">{{ getFolderTitle() }}</h2>
         <div class="filter-tabs flex bg-zinc-900 border border-border p-0.5 rounded-md">
           <button 
@@ -100,7 +24,7 @@
       </div>
 
       <!-- Search Box -->
-      <div class="search-box-container p-3 border-b border-border bg-zinc-950/20">
+      <div class="search-box-container p-3 border-b border-border">
         <div class="relative">
           <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
           <Input 
@@ -158,7 +82,7 @@
       </div>
     </div>
 
-    <!-- 3. RIGHT COLUMN: Email Reading Pane -->
+    <!-- 2. EMAIL READING PANE COLUMN -->
     <div class="webmail-right-column flex flex-col bg-zinc-950/10">
       <!-- Active Message State -->
       <div v-if="selectedMail" class="flex flex-col h-full overflow-hidden">
@@ -237,7 +161,7 @@
             >
               <FileText class="h-4 w-4 text-zinc-400" />
               <div class="flex flex-col text-left">
-                <span class="text-zinc-200 font-medium max-w-[120px] truncate">{{ att.filename }}</span>
+                <span class="text-zinc-220 font-medium max-w-[120px] truncate">{{ att.filename }}</span>
                 <span class="text-[10px] text-zinc-500">{{ att.size }}</span>
               </div>
               <Download class="h-3.5 w-3.5 text-zinc-400 hover:text-white" />
@@ -358,15 +282,13 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useGlobalState } from '../store'
 import { accountService } from '../services/accountService'
 import { mailService } from '../services/mailService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { 
   Inbox, FileText, Send, AlertTriangle, Trash2, Archive, 
   Users, RefreshCw, MessageSquare, ShoppingBag, Tag, 
@@ -383,12 +305,14 @@ const props = defineProps({
 
 const route = useRoute()
 
-// State management
-const accountEmails = ref([])
-const selectedEmailAddress = ref('')
+const {
+  adminMailTabAddress: selectedEmailAddress,
+  adminMailActiveFolder: currentFolder,
+  adminMailActiveMail: selectedMail,
+  adminMailIsComposeOpen: isComposeOpen
+} = useGlobalState()
+
 const emails = ref([])
-const selectedMail = ref(null)
-const currentFolder = ref('inbox')
 const filterReadState = ref('all') // 'all' or 'unread'
 const mailSearchQuery = ref('')
 
@@ -398,71 +322,43 @@ const isThreadMuted = ref(false)
 const isSendingReply = ref(false)
 
 // Compose States
-const isComposeOpen = ref(false)
 const composeModel = ref({ to: '', subject: '', body: '' })
 
-// Sidebar folder definitions
 const mainFolders = [
-  { id: 'inbox', name: 'Inbox', icon: 'Inbox' },
-  { id: 'drafts', name: 'Drafts', icon: 'FileText' },
-  { id: 'sent', name: 'Sent', icon: 'Send' },
-  { id: 'junk', name: 'Junk', icon: 'AlertTriangle' },
-  { id: 'trash', name: 'Trash', icon: 'Trash2' },
-  { id: 'archive', name: 'Archive', icon: 'Archive' }
+  { id: 'inbox', name: 'Inbox' },
+  { id: 'drafts', name: 'Drafts' },
+  { id: 'sent', name: 'Sent' },
+  { id: 'junk', name: 'Junk' },
+  { id: 'trash', name: 'Trash' },
+  { id: 'archive', name: 'Archive' }
 ]
 
 const categoryFolders = [
-  { id: 'social', name: 'Social', icon: 'Users' },
-  { id: 'updates', name: 'Updates', icon: 'RefreshCw' },
-  { id: 'forums', name: 'Forums', icon: 'MessageSquare' },
-  { id: 'shopping', name: 'Shopping', icon: 'ShoppingBag' },
-  { id: 'promotions', name: 'Promotions', icon: 'Tag' }
+  { id: 'social', name: 'Social' },
+  { id: 'updates', name: 'Updates' },
+  { id: 'forums', name: 'Forums' },
+  { id: 'shopping', name: 'Shopping' },
+  { id: 'promotions', name: 'Promotions' }
 ]
-
-const iconMap = {
-  Inbox, FileText, Send, AlertTriangle, Trash2, Archive,
-  Users, RefreshCw, MessageSquare, ShoppingBag, Tag
-}
-
-const getIconComponent = (iconName) => {
-  return iconMap[iconName] || Inbox
-}
-
-// Lifecycles
-onMounted(() => {
-  loadMailboxes()
-})
-
-const loadMailboxes = () => {
-  const accounts = accountService.getAccounts()
-  accountEmails.value = accounts.map(acc => acc.email)
-  
-  const emailQuery = props.initialEmail || route.query.email
-  if (emailQuery && accountEmails.value.includes(emailQuery)) {
-    selectedEmailAddress.value = emailQuery
-  } else if (accountEmails.value.length > 0) {
-    selectedEmailAddress.value = accountEmails.value[0]
-  }
-
-  loadEmailsForAddress()
-}
 
 const loadEmailsForAddress = () => {
   if (selectedEmailAddress.value) {
     emails.value = mailService.getMails(selectedEmailAddress.value)
-    selectedMail.value = null
   }
 }
 
-const onMailboxChange = () => {
+onMounted(() => {
+  // If route query params has email, update store
+  const emailQuery = props.initialEmail || route.query.email
+  if (emailQuery) {
+    selectedEmailAddress.value = emailQuery
+  }
   loadEmailsForAddress()
-}
+})
 
-// Sidebar logic
-const selectFolder = (folderId) => {
-  currentFolder.value = folderId
-  selectedMail.value = null
-}
+watch(selectedEmailAddress, () => {
+  loadEmailsForAddress()
+})
 
 const setReadFilter = (state) => {
   filterReadState.value = state
@@ -475,33 +371,7 @@ const getFolderTitle = () => {
   return matched ? matched.name : 'Inbox'
 }
 
-// Badge counters mock logic
-const getFolderCount = (folderId) => {
-  if (folderId === 'inbox') {
-    return emails.value.filter(m => !m.isSent && !m.isRead).length
-  }
-  if (folderId === 'drafts') return 9
-  if (folderId === 'junk') return 23
-  if (folderId === 'archive') return 19
-  return 0
-}
-
-const getCategoryCount = (catId) => {
-  if (catId === 'social') return 972
-  if (catId === 'updates') return 342
-  if (catId === 'forums') return 128
-  if (catId === 'shopping') return 8
-  if (catId === 'promotions') return 21
-  return 0
-}
-
 // Display format helpers
-const getAccountDisplayName = (emailStr) => {
-  if (!emailStr) return ''
-  const prefix = emailStr.split('@')[0]
-  return prefix.charAt(0).toUpperCase() + prefix.slice(1)
-}
-
 const getCleanSender = (senderStr) => {
   if (!senderStr) return ''
   return senderStr.split('<')[0].trim()
@@ -529,7 +399,7 @@ const getInitials = (senderStr) => {
   return clean.substring(0, 2).toUpperCase()
 }
 
-// Time Formatting matching the screenshot
+// Time Formatting
 const relativeTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -591,13 +461,6 @@ const toggleStar = (mail) => {
   mail.isStarred = !mail.isStarred
 }
 
-const toggleReadState = () => {
-  if (!selectedMail.value) return
-  const newState = !selectedMail.value.isRead
-  mailService.markAsRead(selectedMail.value.id, newState)
-  selectedMail.value.isRead = newState
-}
-
 // Active folder emails filtration
 const filteredEmails = computed(() => {
   let list = [...emails.value]
@@ -610,10 +473,8 @@ const filteredEmails = computed(() => {
   } else if (currentFolder.value === 'starred') {
     list = list.filter(m => m.isStarred)
   } else if (categoryFolders.some(f => f.id === currentFolder.value)) {
-    // Category tags mapping
     list = list.filter(m => m.tags && m.tags.includes(currentFolder.value))
   } else {
-    // Default Inbox
     list = list.filter(m => !m.isSent)
   }
 
@@ -646,11 +507,6 @@ const deleteMail = () => {
 
 const archiveActiveMail = () => {
   alert(`Message "${selectedMail.value.subject}" moved to Archive.`)
-  selectedMail.value = null
-}
-
-const snoozeActiveMail = () => {
-  alert(`Message "${selectedMail.value.subject}" snoozed.`)
   selectedMail.value = null
 }
 
@@ -688,12 +544,6 @@ const submitQuickReply = () => {
   }, 800)
 }
 
-// Dialog Compose mail
-const openComposeDialog = () => {
-  composeModel.value = { to: '', subject: '', body: '' }
-  isComposeOpen.value = true
-}
-
 const handleSendMail = () => {
   const model = composeModel.value
   if (!model.to.trim()) {
@@ -716,25 +566,13 @@ const handleSendMail = () => {
 const downloadMockAttachment = (att) => {
   alert(`Downloading attachment: ${att.filename} (${att.size})`)
 }
-
-// Watch initialEmail parameter change
-watch(() => props.initialEmail, (newEmail) => {
-  if (newEmail && accountEmails.value.includes(newEmail)) {
-    selectedEmailAddress.value = newEmail
-    loadEmailsForAddress()
-  }
-})
 </script>
 
 <style scoped>
 .webmail-dark-container {
   display: grid;
-  grid-template-columns: 240px 320px 1fr;
+  grid-template-columns: 320px 1fr;
   height: calc(100vh - 140px);
-}
-
-.webmail-left-sidebar {
-  height: 100%;
 }
 
 .webmail-middle-column {

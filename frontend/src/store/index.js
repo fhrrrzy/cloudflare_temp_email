@@ -87,6 +87,9 @@ export const useGlobalState = createGlobalState(
         const adminTab = useSessionStorage('adminTab', "account");
         const adminMailTabAddress = ref("");
         const adminSendBoxTabAddress = ref("");
+        const adminMailActiveFolder = ref("inbox");
+        const adminMailActiveMail = ref(null);
+        const adminMailIsComposeOpen = ref(false);
         const mailboxSplitSize = useStorage('mailboxSplitSize', 0.25);
         const mailListView = useStorage('mailListView', false);
         const mailListPreviewLineClamp = useStorage('mailListPreviewLineClamp', 2);
@@ -161,6 +164,9 @@ export const useGlobalState = createGlobalState(
             adminTab,
             adminMailTabAddress,
             adminSendBoxTabAddress,
+            adminMailActiveFolder,
+            adminMailActiveMail,
+            adminMailIsComposeOpen,
             mailboxSplitSize,
             mailListView,
             mailListPreviewLineClamp,

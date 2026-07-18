@@ -1,101 +1,37 @@
 <template>
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar" :class="{ 'collapsed': isSidebarCollapsed }">
-      <div class="sidebar-brand">
-        <img src="/logo.png" alt="Logo" class="logo" />
-        <span v-if="!isSidebarCollapsed" class="brand-name">Temp Mail</span>
-      </div>
+  <SidebarProvider>
+    <div class="flex h-screen w-screen overflow-hidden bg-background">
+      <!-- AppSidebar renders the primary icon bar and the secondary list -->
+      <AppSidebar />
 
-      <nav class="nav-menu">
-        <router-link to="/admin/home" class="nav-item" active-class="active">
-          <LayoutDashboard class="h-[18px] w-[18px] shrink-0" />
-          <span v-if="!isSidebarCollapsed">Dashboard</span>
-        </router-link>
-        
-        <router-link to="/admin/accounts" class="nav-item" active-class="active">
-          <Users class="h-[18px] w-[18px] shrink-0" />
-          <span v-if="!isSidebarCollapsed">Account Management</span>
-        </router-link>
-        
-        <router-link to="/admin/webmail" class="nav-item" active-class="active">
-          <Mail class="h-[18px] w-[18px] shrink-0" />
-          <span v-if="!isSidebarCollapsed">Webmail client</span>
-        </router-link>
-        
-        <router-link to="/admin/settings" class="nav-item" active-class="active">
-          <SettingsIcon class="h-[18px] w-[18px] shrink-0" />
-          <span v-if="!isSidebarCollapsed">Settings</span>
-        </router-link>
-      </nav>
-
-      <div class="sidebar-toggle" @click="toggleSidebar">
-        <ChevronRight v-if="isSidebarCollapsed" class="h-4 w-4" />
-        <ChevronLeft v-else class="h-4 w-4" />
-      </div>
-    </aside>
-
-    <!-- Main Content Area -->
-    <div class="main-container">
-      <!-- Top Navbar -->
-      <header class="navbar">
-        <div class="navbar-left">
-          <span class="page-title">{{ currentRouteName }}</span>
-        </div>
-        
-        <div class="navbar-right">
-          <div class="user-profile">
-            <span class="avatar">{{ userInitials }}</span>
-            <div class="user-info">
-              <span class="username">{{ currentUser?.username }}</span>
-              <span class="role">{{ currentUser?.role }}</span>
-            </div>
+      <!-- Main viewport area -->
+      <SidebarInset class="flex flex-col flex-1 overflow-hidden min-w-0 bg-zinc-950">
+        <!-- Site Header -->
+        <header class="flex h-14 shrink-0 items-center justify-between border-b border-border px-6 bg-zinc-900/30">
+          <div class="flex items-center gap-2">
+            <!-- Sidebar trigger to expand / collapse -->
+            <SidebarTrigger class="text-zinc-400 hover:text-white" />
+            <div class="h-4 w-[1px] bg-border mx-2"></div>
+            <span class="text-base font-semibold text-white tracking-tight">{{ currentRouteName }}</span>
           </div>
-          
-          <Button 
-            variant="ghost" 
-            class="logout-button gap-2 hover:bg-zinc-800 text-zinc-400 hover:text-red-400"
-            @click="handleLogout" 
-          >
-            <LogOut class="h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </header>
+        </header>
 
-      <!-- Sub Page Router View -->
-      <main class="content-view">
-        <router-view />
-      </main>
+        <!-- Main content view -->
+        <main class="flex-1 overflow-y-auto p-6">
+          <router-view />
+        </main>
+      </SidebarInset>
     </div>
-  </div>
+  </SidebarProvider>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { authService } from '../services/authService'
-import { Button } from '@/components/ui/button'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Mail, 
-  Settings as SettingsIcon, 
-  LogOut, 
-  ChevronLeft, 
-  ChevronRight 
-} from 'lucide-vue-next'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import AppSidebar from '@/components/AppSidebar.vue'
 
-const router = useRouter()
 const route = useRoute()
-const isSidebarCollapsed = ref(false)
-
-const currentUser = computed(() => authService.getCurrentUser())
-
-const userInitials = computed(() => {
-  const name = currentUser.value?.username || 'Admin'
-  return name.substring(0, 2).toUpperCase()
-})
 
 const currentRouteName = computed(() => {
   switch (route.name) {
@@ -111,210 +47,4 @@ const currentRouteName = computed(() => {
       return 'Dashboard'
   }
 })
-
-const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
-}
-
-const handleLogout = () => {
-  authService.logout()
-  router.push('/login')
-}
 </script>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
-.app-layout {
-  font-family: 'Inter', sans-serif;
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background-color: var(--bg-app);
-}
-
-.sidebar {
-  width: 260px;
-  background-color: var(--zinc-900);
-  color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  border-right: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.sidebar.collapsed {
-  width: 70px;
-}
-
-.sidebar-brand {
-  height: 70px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 12px;
-  border-bottom: 1px solid var(--border-color);
-  overflow: hidden;
-}
-
-.logo {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.brand-name {
-  font-family: 'Outfit', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.nav-menu {
-  padding: 20px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-grow: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 12px 15px;
-  border-radius: 8px;
-  color: var(--zinc-400);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #f8fafc;
-}
-
-.nav-item.active {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.sidebar-toggle {
-  height: 40px;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  transition: color 0.2s;
-}
-
-.sidebar-toggle:hover {
-  color: #f8fafc;
-}
-
-/* Main Container Styles */
-.main-container {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  overflow: hidden;
-}
-
-/* Navbar Styles */
-.navbar {
-  height: 70px;
-  background-color: var(--zinc-900);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 30px;
-  flex-shrink: 0;
-}
-
-.page-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.navbar-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-right: 1px solid var(--border-color);
-  padding-right: 20px;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.username {
-  font-weight: 600;
-  color: #ffffff;
-  font-size: 14px;
-  line-height: 1.2;
-}
-
-.role {
-  font-size: 11px;
-  color: var(--zinc-400);
-}
-
-/* Content Area */
-.content-view {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 30px;
-  box-sizing: border-box;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .sidebar {
-    position: absolute;
-    height: 100vh;
-    z-index: 1000;
-  }
-  .sidebar.collapsed {
-    width: 0;
-    border: none;
-    overflow: hidden;
-  }
-}
-</style>
