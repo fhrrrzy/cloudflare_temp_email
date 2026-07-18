@@ -15,11 +15,9 @@ import { getNaiveLocaleConfig } from './i18n/naive-locale'
 import { DEFAULT_LOCALE, isSupportedLocale } from './i18n/utils'
 
 const route = useRoute()
-
 // Conditional layout check
 const isAdminRoute = computed(() => {
-  const path = route.path.replace(/^\/(?:en|zh|de|es|pt|ja)\//, '/')
-  return path.startsWith('/admin') || path === '/login'
+  return route.path.includes('/admin') || route.path.includes('/login')
 })
 
 const {
